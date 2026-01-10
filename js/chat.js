@@ -13,7 +13,7 @@ function addMessage(isAgent, content) {
     messageDiv.innerHTML = `
             <div class="header">
                 <img src="img/agent图标.png" alt="Agent">
-                <span>GuardianAgent</span>
+                <span>CORE Muti-Agent System</span>
             </div>
             <div class="content">
                 ${formatAgentResponse(content)}
@@ -121,9 +121,9 @@ async function sendMessage() {
 // 初始化示例对话
 function initializeChat() {
   const initialMessage = {
-    outerloop: "1. videoagent analyzes the video content and intercepts the key frames\n2. keyframeagent analyzes the vehicles in the key frames and conducts feature extraction",
+    outerloop: "1. Videoagent analyzes the video content and intercepts the key frames\n2. Keyframeagent analyzes the vehicles in the key frames and conducts feature extraction",
     innerloop: "The videoagent is analyzing the video.\nThe videoagent is intercepting the key frames.\nThe keyframeagent is conducting feature analysis.",
-    actions: "initializing video analysis\nstarting frame extraction\npreparing feature detection\nbeginning analysis process",
+    actions: "Initializing video analysis\nStarting frame extraction\nPreparing feature detection\nBeginning analysis process",
     dag: {
       matrix: [
         [0, 1, 1, 0, 0],

@@ -8,106 +8,38 @@
  * @param {Object} map - Leaflet地图实例
  * @param {String} color - 曲线颜色
  * @param {String} tooltip - 提示文本
+ * @param {String} dashArray - 虚线样式，如果不提供则为实线
  * @return {Object} L.polyline实例
  */
-function createCurve(start, end, map, color, tooltip) {
-  // 获取两点之间的距离和方向
-  const dx = end.lng - start.lng;
-  const dy = end.lat - start.lat;
-  const distance = Math.sqrt(dx * dx + dy * dy);
+function createCurve(start, end, map, color, tooltip, dashArray) {
+  // 创建直线连接起点和终点
+  const linePoints = [
+    [start.lat, start.lng],
+    [end.lat, end.lng]
+  ];
 
-  // 创建控制点，使线条呈现优美的弧度
-  // 使用两个控制点创建三次贝塞尔曲线
-  const offsetFactor = 0.4; // 控制曲率的因子
-  const offset = distance * offsetFactor;
-
-  // 计算垂直于连线的方向
-  const perpX = dy;
-  const perpY = -dx;
-
-  // 单位化垂直向量
-  const length = Math.sqrt(perpX * perpX + perpY * perpY);
-  const normPerpX = perpX / length;
-  const normPerpY = perpY / length;
-
-  // 计算控制点的基准位置 - 在两点之间的路径上
-  const midX = (start.lng + end.lng) / 2;
-  const midY = (start.lat + end.lat) / 2;
-
-  // 创建两个控制点，分别在曲线两侧
-  // 第一个控制点：靠近起点但偏离直线
-  const ctrl1X = start.lng + dx * 0.25 + normPerpX * (offset * 0.7);
-  const ctrl1Y = start.lat + dy * 0.25 + normPerpY * (offset * 0.7);
-
-  // 第二个控制点：靠近终点但偏离直线
-  const ctrl2X = start.lng + dx * 0.75 + normPerpX * (offset * 0.5);
-  const ctrl2Y = start.lat + dy * 0.75 + normPerpY * (offset * 0.5);
-
-  const controlPoint1 = { lat: ctrl1Y, lng: ctrl1X };
-  const controlPoint2 = { lat: ctrl2Y, lng: ctrl2X };
-
-  // 生成曲线上的点 - 使用更多点以获得更平滑的曲线
-  const curvePoints = [];
-
-  // 使用三次贝塞尔曲线公式生成点
-  for (let t = 0; t <= 1; t += 0.01) { // 更小的步长，更平滑的曲线
-    // 三次贝塞尔曲线公式
-    const lat = Math.pow(1 - t, 3) * start.lat +
-      3 * Math.pow(1 - t, 2) * t * controlPoint1.lat +
-      3 * (1 - t) * Math.pow(t, 2) * controlPoint2.lat +
-      Math.pow(t, 3) * end.lat;
-
-    const lng = Math.pow(1 - t, 3) * start.lng +
-      3 * Math.pow(1 - t, 2) * t * controlPoint1.lng +
-      3 * (1 - t) * Math.pow(t, 2) * controlPoint2.lng +
-      Math.pow(t, 3) * end.lng;
-
-    curvePoints.push([lat, lng]);
-  }
-
-  // 创建曲线并添加到地图
-  const curve = L.polyline(curvePoints, {
+  // 创建线条样式对象
+  const lineOptions = {
     color: color,
     weight: 5,
     opacity: 0.7,
     smoothFactor: 1
-  }).addTo(map);
+  };
+
+  // 如果提供了虚线样式，添加到选项中
+  if (dashArray) {
+    lineOptions.dashArray = dashArray;
+  }
+
+  // 创建直线并添加到地图
+  const line = L.polyline(linePoints, lineOptions).addTo(map);
 
   // 添加提示文本
   if (tooltip) {
-    curve.bindTooltip(tooltip);
+    line.bindTooltip(tooltip);
   }
 
-  return curve;
-}
-
-/**
- * 在地图上创建摄像头到边缘服务器的连接曲线
- * @param {Object} map - Leaflet地图实例
- * @param {Array} cameras - 摄像头数组
- * @param {Object} edgeServer - 边缘服务器对象
- */
-function createCameraToEdgeServerCurves(map, cameras, edgeServer) {
-  // 获取所有摄像头和边缘服务器的位置
-  const camera1Position = cameras.find(camera => camera.id === 'Camera1');
-  const camera2Position = cameras.find(camera => camera.id === 'Camera2');
-  const camera3Position = cameras.find(camera => camera.id === 'Camera3');
-
-  // 蓝色 - 摄像头连接曲线颜色
-  const cameraColor = '#3498DB';
-
-  // 创建并添加曲线到地图，分别连接三个摄像头与边缘服务器
-  if (camera1Position && edgeServer) {
-    createCurve(camera1Position, edgeServer, map, cameraColor, "Camera1 ↔ Edge Server");
-  }
-
-  if (camera2Position && edgeServer) {
-    createCurve(camera2Position, edgeServer, map, cameraColor, "Camera2 ↔ Edge Server");
-  }
-
-  if (camera3Position && edgeServer) {
-    createCurve(camera3Position, edgeServer, map, cameraColor, "Camera3 ↔ Edge Server");
-  }
+  return line;
 }
 
 /**
@@ -118,30 +50,81 @@ function createCameraToEdgeServerCurves(map, cameras, edgeServer) {
  */
 function createBaseStationToEdgeServerCurves(map, baseStations, edgeServer) {
   // 获取所有基站的位置
-  const bs01Position = baseStations.find(station => station.id === 'BS01');
-  const bs02Position = baseStations.find(station => station.id === 'BS02');
-  const bs03Position = baseStations.find(station => station.id === 'BS03');
+  const nuc01Position = baseStations.find(station => station.id === 'Nuc01');
+  const nuc02Position = baseStations.find(station => station.id === 'Nuc02');
+  const nuc03Position = baseStations.find(station => station.id === 'Nuc03');
 
   // 橙色 - 基站连接曲线颜色
   const bsColor = '#F39C12';
 
   // 创建并添加曲线到地图，分别连接三个基站与边缘服务器
-  if (bs01Position && edgeServer) {
-    createCurve(bs01Position, edgeServer, map, bsColor, "BS01 ↔ Edge Server");
+  if (nuc01Position && edgeServer) {
+    createCurve(nuc01Position, edgeServer, map, bsColor, "Nuc01 ↔ Edge Server");
   }
 
-  if (bs02Position && edgeServer) {
-    createCurve(bs02Position, edgeServer, map, bsColor, "BS02 ↔ Edge Server");
+  if (nuc02Position && edgeServer) {
+    createCurve(nuc02Position, edgeServer, map, bsColor, "Nuc02 ↔ Edge Server");
   }
 
-  if (bs03Position && edgeServer) {
-    createCurve(bs03Position, edgeServer, map, bsColor, "BS03 ↔ Edge Server");
+  if (nuc03Position && edgeServer) {
+    createCurve(nuc03Position, edgeServer, map, bsColor, "Nuc03 ↔ Edge Server");
+  }
+}
+
+/**
+ * 在地图上创建摄像头到新的Base Station的连接曲线
+ * @param {Object} map - Leaflet地图实例
+ * @param {Array} cameras - 摄像头数组
+ * @param {Array} baseStations - 基站数组
+ */
+function createCameraToBaseStationCurves(map, cameras, baseStations) {
+  // 获取Base Station的位置
+  const baseStationPosition = baseStations.find(station => station.id === 'Base Station');
+
+  // 如果没有找到Base Station，直接返回
+  if (!baseStationPosition) {
+    console.error('Base Station不存在');
+    return;
+  }
+
+  // 蓝色 - 摄像头连接曲线颜色
+  const cameraColor = '#3498DB';
+
+  // 虚线样式 - "5, 10" 表示5像素的线段和10像素的间隔
+  const dashStyle = "5, 10";
+
+  // 为每个摄像头创建连接曲线
+  cameras.forEach(camera => {
+    if (camera && baseStationPosition) {
+      createCurve(camera, baseStationPosition, map, cameraColor, `${camera.id} ↔ Base Station`, dashStyle);
+      console.log(`创建了 ${camera.id} 到 Base Station 的虚线连接`);
+    }
+  });
+}
+
+/**
+ * 在地图上创建新的Base Station到Edge Server的绿色连接曲线
+ * @param {Object} map - Leaflet地图实例
+ * @param {Array} baseStations - 基站数组
+ * @param {Object} edgeServer - 边缘服务器对象
+ */
+function createNewBaseStationToEdgeServerCurve(map, baseStations, edgeServer) {
+  // 获取Base Station的位置
+  const baseStationPosition = baseStations.find(station => station.id === 'Base Station');
+
+  // 绿色 - Base Station到Edge Server的连接曲线颜色
+  const bsColor = '#006600'; // 深绿色
+
+  // 创建并添加曲线到地图，连接Base Station与Edge Server
+  if (baseStationPosition && edgeServer) {
+    createCurve(baseStationPosition, edgeServer, map, bsColor, "Base Station ↔ Edge Server");
   }
 }
 
 // 导出函数以便在map.js中使用
 window.mapCurves = {
   createCurve,
-  createCameraToEdgeServerCurves,
-  createBaseStationToEdgeServerCurves
-}; 
+  createBaseStationToEdgeServerCurves,
+  createCameraToBaseStationCurves,
+  createNewBaseStationToEdgeServerCurve
+};

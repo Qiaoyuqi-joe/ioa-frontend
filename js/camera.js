@@ -4,6 +4,13 @@ let refreshCount = 0;
 
 // 监听重绘事件
 document.addEventListener('DOMContentLoaded', () => {
+  // 为相机指示器添加工具提示
+  document.getElementById('camera1-indicator').setAttribute('data-tooltip', 'Switch to Camera1');
+  document.getElementById('camera2-indicator').setAttribute('data-tooltip', 'Switch to Camera2');
+  document.getElementById('camera3-indicator').setAttribute('data-tooltip', 'Switch to Camera3');
+  document.getElementById('camera4-indicator').setAttribute('data-tooltip', 'Switch to Camera4');
+  document.getElementById('camera5-indicator').setAttribute('data-tooltip', 'Switch to Camera5');
+
   // 使用MutationObserver监测DOM变化
   const observer = new MutationObserver((mutations) => {
     // 检查变更是否发生在地图区域内
@@ -52,7 +59,9 @@ document.addEventListener('DOMContentLoaded', () => {
 const cameraStates = {
   Camera1: { status: 'normal', feed: null, lastAnomalyTime: 0, videoFile: 'video/1.mp4' },
   Camera2: { status: 'normal', feed: null, lastAnomalyTime: 0, videoFile: 'video/2.mp4' },
-  Camera3: { status: 'normal', feed: null, lastAnomalyTime: 0, videoFile: 'video/3.mp4' }
+  Camera3: { status: 'normal', feed: null, lastAnomalyTime: 0, videoFile: 'video/3.mp4' },
+  Camera4: { status: 'normal', feed: null, lastAnomalyTime: 0, videoFile: 'video/4.mp4' },
+  Camera5: { status: 'normal', feed: null, lastAnomalyTime: 0, videoFile: 'video/5.mp4' }
 };
 
 // 当前活动摄像头
@@ -62,13 +71,15 @@ let activeCamera = 'Camera1';
 const cameraStatusMap = {
   Camera1: 'pos1-status',
   Camera2: 'pos2-status',
-  Camera3: 'pos3-status'
+  Camera3: 'pos3-status',
+  Camera4: 'pos4-status',
+  Camera5: 'pos5-status'
 };
 
 // 添加全局变量用于定时显示异常消息和恢复消息
 let anomalyAlertTimer = null;
 let dismissAlertTimer = null;
-const ANOMALY_ALERT_INTERVAL = 10000; // 每10秒显示一次异常警报
+const ANOMALY_ALERT_INTERVAL = 60000; // 每60秒显示一次异常警报
 const DISMISS_DELAY = 5000; // 异常警报后5秒显示恢复消息
 
 // 当前显示异常的摄像头
@@ -107,7 +118,7 @@ function updateCameraStatus(cameraId, status) {
 // 显示异常摄像头警报
 function showAnomalyAlert() {
   // 获取当前处于异常状态的摄像头
-  const cameras = ['Camera1', 'Camera2', 'Camera3'];
+  const cameras = ['Camera1', 'Camera2', 'Camera3', 'Camera4', 'Camera5'];
 
   // 如果没有异常摄像头，先设置一个随机摄像头为异常状态
   const anomalyCameras = cameras.filter(camId => cameraStates[camId].status === 'anomaly');
@@ -270,6 +281,8 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('pos1-status').style.backgroundColor = '#28a745';
   document.getElementById('pos2-status').style.backgroundColor = '#28a745';
   document.getElementById('pos3-status').style.backgroundColor = '#28a745';
+  document.getElementById('pos4-status').style.backgroundColor = '#28a745';
+  document.getElementById('pos5-status').style.backgroundColor = '#28a745';
 
   // 验证alertList元素是否存在
   const alertList = document.getElementById('alertList');
@@ -278,6 +291,27 @@ document.addEventListener('DOMContentLoaded', () => {
   } else {
     console.log('成功找到alertList元素');
   }
+
+  // 为摄像头指示器添加点击事件
+  document.getElementById('camera1-indicator').addEventListener('click', () => {
+    updateCameraDisplay('Camera1');
+  });
+
+  document.getElementById('camera2-indicator').addEventListener('click', () => {
+    updateCameraDisplay('Camera2');
+  });
+
+  document.getElementById('camera3-indicator').addEventListener('click', () => {
+    updateCameraDisplay('Camera3');
+  });
+
+  document.getElementById('camera4-indicator').addEventListener('click', () => {
+    updateCameraDisplay('Camera4');
+  });
+
+  document.getElementById('camera5-indicator').addEventListener('click', () => {
+    updateCameraDisplay('Camera5');
+  });
 
   // 添加初始的欢迎消息
   addOptimizedAlertMessage('The surveillance system has been activated and the camera status is being monitored....', 'info');

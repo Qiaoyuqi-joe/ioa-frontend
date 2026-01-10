@@ -3,169 +3,205 @@ let resourceChart = null;
 
 // 创建柱状图函数
 function createResourceChart() {
-  const ctx = document.getElementById('resourceChart').getContext('2d');
+  try {
+    console.log("开始初始化Resource Usage图表");
 
-  if (!ctx) {
-    console.error('Cannot get 2D context from resourceChart canvas element');
-    return null;
-  }
+    const chartContainer = document.getElementById('resourceChart');
+    if (!chartContainer) {
+      console.error('找不到resourceChart容器元素');
+      return null;
+    }
 
-  return new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: ['BS01-CPU', 'BS01-GPU', 'BS02-CPU', 'BS02-GPU', 'BS03-CPU', 'BS03-GPU', 'ES-CPU', 'ES-GPU'],
-      datasets: [
-        {
-          label: 'Used',
-          data: [50, 50, 50, 50, 50, 50, 50, 50],
-          backgroundColor: 'rgba(54, 162, 235, 0.8)',
-          barPercentage: 0.6,
-          categoryPercentage: 0.7
+    console.log("容器元素已获取，开始创建ECharts实例");
+
+    // 初始化ECharts实例
+    const chart = echarts.init(chartContainer);
+
+    // 设置柱状图配置
+    const option = {
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: {
+          type: 'shadow'
         },
-        {
-          label: 'Free',
-          data: [50, 50, 50, 50, 50, 50, 50, 50],
-          backgroundColor: 'rgba(211, 211, 211, 0.8)',
-          barPercentage: 0.6,
-          categoryPercentage: 0.7
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      scales: {
-        x: {
-          stacked: true,
-          grid: {
-            display: false
-          },
-          ticks: {
-            font: {
-              size: 10
-            }
-          }
-        },
-        y: {
-          stacked: true,
-          beginAtZero: true,
-          max: 100,
-          grid: {
-            color: 'rgba(0, 0, 0, 0.05)'
-          },
-          ticks: {
-            stepSize: 25,
-            font: {
-              size: 10
-            },
-            callback: function (value) {
-              return value + '%';
-            }
-          }
+        formatter: function (params) {
+          return params[0].name + '<br/>' +
+            params[0].seriesName + ': ' + params[0].value + '%<br/>' +
+            params[1].seriesName + ': ' + params[1].value + '%';
         }
       },
-      plugins: {
-        legend: {
-          position: 'top',
-          labels: {
-            boxWidth: 10,
-            padding: 6,
-            font: {
-              size: 10
-            }
-          }
-        },
-        tooltip: {
-          callbacks: {
-            label: function (context) {
-              return context.dataset.label + ': ' + context.parsed.y + '%';
-            }
-          }
+      legend: {
+        data: ['CPU', 'GPU'],
+        top: 0,
+        textStyle: {
+          fontSize: 10
         }
-      }
-    }
-  });
+      },
+      grid: {
+        left: '3%',
+        right: '4%',
+        bottom: '3%',
+        top: '15%',
+        containLabel: true
+      },
+      xAxis: {
+        type: 'category',
+        data: ['BS', 'ES', 'Nuc01', 'Nuc02', 'Nuc03'],
+        axisLabel: {
+          fontSize: 10
+        }
+      },
+      yAxis: {
+        type: 'value',
+        max: 100,
+        axisLabel: {
+          formatter: '{value}%',
+          fontSize: 10
+        }
+      },
+      series: [
+        {
+          name: 'CPU',
+          type: 'bar',
+          data: [50, 50, 50, 50, 50],
+          itemStyle: {
+            color: 'rgba(54, 162, 235, 0.8)'
+          },
+          barWidth: '20%',
+          barGap: '10%'
+        },
+        {
+          name: 'GPU',
+          type: 'bar',
+          data: [50, 50, 50, 50, 50],
+          itemStyle: {
+            color: 'rgba(255, 206, 86, 0.8)'
+          },
+          barWidth: '20%',
+          barGap: '10%'
+        }
+      ]
+    };
+
+    // 使用配置项设置图表
+    chart.setOption(option);
+
+    // 窗口大小变化时，重置图表大小
+    window.addEventListener('resize', function () {
+      chart.resize();
+    });
+
+    console.log("ECharts实例创建完成");
+    return chart;
+  } catch (error) {
+    console.error('创建资源图表时出错:', error);
+    return null;
+  }
 }
 
 // 更新图表数据
 function updateChartData(data) {
   if (!resourceChart) {
-    console.error('Cannot update resource data: chart not initialized');
+    console.error('无法更新资源数据: 图表未初始化');
     return;
   }
 
   // 标记开始更新图表
   document.body.classList.add('updating-chart');
 
-  // 提取所有使用数据
-  const usedValues = [
-    data.bs01.cpu,
-    data.bs01.gpu,
-    data.bs02.cpu,
-    data.bs02.gpu,
-    data.bs03.cpu,
-    data.bs03.gpu,
+  // 提取CPU数据
+  const cpuValues = [
+    data.bs.cpu,
     data.es.cpu,
-    data.es.gpu
+    data.nuc01.cpu,
+    data.nuc02.cpu,
+    data.nuc03.cpu
   ];
 
-  // 计算空闲值（总和为100%）
-  const freeValues = usedValues.map(val => 100 - val);
+  // 提取GPU数据
+  const gpuValues = [
+    data.bs.gpu,
+    data.es.gpu,
+    data.nuc01.gpu,
+    data.nuc02.gpu,
+    data.nuc03.gpu
+  ];
 
-  // 使用requestAnimationFrame来合并多次更新
-  requestAnimationFrame(() => {
-    // 更新数据
-    resourceChart.data.datasets[0].data = usedValues;
-    resourceChart.data.datasets[1].data = freeValues;
-
-    // 更新图表
-    resourceChart.update({
-      duration: 300,
-      easing: 'easeOutQuad'
-    });
-
-    // 更新完成后移除标记
-    setTimeout(() => {
-      document.body.classList.remove('updating-chart');
-    }, 350); // 略大于动画时长，确保动画完成
+  // 更新ECharts数据
+  resourceChart.setOption({
+    series: [
+      {
+        name: 'CPU',
+        data: cpuValues
+      },
+      {
+        name: 'GPU',
+        data: gpuValues
+      }
+    ]
   });
+
+  // 更新完成后移除标记
+  setTimeout(() => {
+    document.body.classList.remove('updating-chart');
+  }, 350);
 }
 
 // 生成随机资源使用数据
 function generateResourceData() {
   return {
-    bs01: {
+    bs: {
       cpu: Math.floor(Math.random() * 60) + 20, // 20-80之间的随机数
       gpu: Math.floor(Math.random() * 70) + 15  // 15-85之间的随机数
-    },
-    bs02: {
-      cpu: Math.floor(Math.random() * 65) + 15, // 15-80之间的随机数
-      gpu: Math.floor(Math.random() * 70) + 10  // 10-80之间的随机数
-    },
-    bs03: {
-      cpu: Math.floor(Math.random() * 60) + 20, // 20-80之间的随机数
-      gpu: Math.floor(Math.random() * 65) + 15  // 15-80之间的随机数
     },
     es: {
       cpu: Math.floor(Math.random() * 75) + 15, // 15-90之间的随机数
       gpu: Math.floor(Math.random() * 80) + 10  // 10-90之间的随机数
+    },
+    nuc01: {
+      cpu: Math.floor(Math.random() * 60) + 20, // 20-80之间的随机数
+      gpu: Math.floor(Math.random() * 65) + 15  // 15-80之间的随机数
+    },
+    nuc02: {
+      cpu: Math.floor(Math.random() * 65) + 15, // 15-80之间的随机数
+      gpu: Math.floor(Math.random() * 70) + 10  // 10-80之间的随机数
+    },
+    nuc03: {
+      cpu: Math.floor(Math.random() * 60) + 20, // 20-80之间的随机数
+      gpu: Math.floor(Math.random() * 65) + 15  // 15-80之间的随机数
     }
   };
 }
 
 // 初始化
 document.addEventListener('DOMContentLoaded', () => {
+  console.log("DOM已加载完成，开始初始化图表");
+
+  // 确保ECharts已定义
+  if (typeof echarts === 'undefined') {
+    console.error("ECharts库未加载，请检查CDN链接是否正确");
+    return;
+  }
+
   // 初始化图表
-  resourceChart = createResourceChart();
+  setTimeout(() => {
+    // 延迟初始化，确保DOM元素已完全渲染
+    resourceChart = createResourceChart();
 
-  // 立即更新一次数据
-  updateChartData(generateResourceData());
-
-  // 定时更新数据
-  setInterval(() => {
-    if (!document.body.classList.contains('updating-cameras') &&
-      !document.body.classList.contains('updating-chart')) {
+    if (resourceChart) {
+      console.log("资源图表创建成功，开始更新数据");
+      // 立即更新一次数据
       updateChartData(generateResourceData());
+
+      // 定时更新数据
+      setInterval(() => {
+        if (!document.body.classList.contains('updating-cameras') &&
+          !document.body.classList.contains('updating-chart')) {
+          updateChartData(generateResourceData());
+        }
+      }, 2000);
+    } else {
+      console.error("资源图表创建失败");
     }
-  }, 2000);
+  }, 500);
 }); 

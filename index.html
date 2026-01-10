@@ -4,82 +4,96 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GuardianAgent</title>
+  <title>IOA - Internet of Agent</title>
   <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
-  <!-- <script src="js/preventAutoRefresh.js"></script> -->
+  <link rel="stylesheet" href="https://unpkg.com/vis-network/standalone/umd/vis-network.min.css" />
 </head>
 
 <body>
   <header>
-    <img src="img/agent图标.png" alt="GuardianAgent Logo" class="logo">
-    <h1>GuardianAgent: A Real-time Processing System for Anomalous Videos</h1>
+    <img src="img/agent图标.png" alt="IOA Logo" class="logo">
+    <h1>IOA: Internet of Agent</h1>
+    <p class="subtitle">Real-Time Agent Network & Dispatch Platform</p>
   </header>
 
+  <!-- 顶部概览统计 -->
+  <div class="overview-bar">
+    <div class="stat-item">
+      <span class="stat-label">Registered Nodes</span>
+      <span class="stat-value" id="totalNodes">0</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-label">Agents</span>
+      <span class="stat-value agent-color" id="agentCount">0</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-label">LLMs</span>
+      <span class="stat-value llm-color" id="llmCount">0</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-label">Tools</span>
+      <span class="stat-value tool-color" id="toolCount">0</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-label">Computing Power</span>
+      <span class="stat-value compute-color" id="computeCount">0</span>
+    </div>
+  </div>
+
   <div class="container">
-    <!-- 左侧聊天区域 -->
-    <div class="chat-section">
-      <div class="chat-container">
-        <div class="messages" id="messages">
-          <!-- 消息将在这里动态添加 -->
+    <!-- 左侧：人机交互区域 -->
+    <div class="left-section">
+      <div class="interaction-panel">
+        <h2>Human-Machine Interaction</h2>
+        <p class="panel-description">Interactive dialog to query and manage agents. Click the button below to register new agents.</p>
+        
+        <div class="chat-container">
+          <div class="messages" id="messages"></div>
+          <div class="input-area">
+            <input type="text" id="userInput" placeholder="Ask about agents...">
+            <button id="sendButton">Send</button>
+          </div>
         </div>
-        <div class="input-area">
-          <input type="text" id="userInput" placeholder="Please enter your message...">
-          <button id="sendButton">Send</button>
-        </div>
+
+        <a href="register.html" class="register-btn">+ Register Agent</a>
       </div>
     </div>
 
-    <!-- 中间区域 -->
+    <!-- 中间：网络拓扑图和资源视图 -->
     <div class="middle-section">
-      <div id="map" class="map-container"></div>
-      <div class="load-presentation">
-        <h2>Resource Usage</h2>
-        <div class="chart-container">
-          <canvas id="resourceChart"></canvas>
-        </div>
+      <div class="network-section">
+        <h2>Network Topology</h2>
+        <p class="section-description">(Dynamic Flashing)</p>
+        <div id="networkGraph" class="network-container"></div>
+      </div>
+
+      <div class="resource-section">
+        <h2>Resource View</h2>
+        <div id="resourceChart" class="chart-container"></div>
       </div>
     </div>
 
-    <!-- 右侧区域 -->
+    <!-- 右侧：Discovery过程 -->
     <div class="right-section">
-      <div class="camera-status">
-        <div class="camera-controls">
-          <div class="camera-indicator">
-            <span>Camera1</span>
-            <div class="status-light" id="pos1-status"></div>
-          </div>
-          <div class="camera-indicator">
-            <span>Camera2</span>
-            <div class="status-light" id="pos2-status"></div>
-          </div>
-          <div class="camera-indicator">
-            <span>Camera3</span>
-            <div class="status-light" id="pos3-status"></div>
-          </div>
-        </div>
-        <div class="camera-feed" id="cameraFeed">
-          <!-- 摄像头画面将在这里显示 -->
-        </div>
-      </div>
-      <div class="alert-messages">
-        <h2>Alert Messages</h2>
-        <div class="alerts" id="alertList">
-          <!-- 警报消息将在这里显示 -->
+      <div class="discovery-panel">
+        <h2>Discovery Process</h2>
+        <p class="panel-description">Agent discovery based on your chat with the system below.</p>
+        
+        <!-- Discovery结果列表 -->
+        <div class="discovery-list" id="discoveryList"></div>
+
+        <div class="selected-agents">
+          <h3>Selected Agents</h3>
+          <div id="selectedList" class="selected-list"></div>
         </div>
       </div>
     </div>
   </div>
 
-  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- 脚本 -->
   <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
-  <script src="js/dag.js"></script>
-  <script src="js/curves.js"></script>
-  <script src="js/map.js"></script>
-  <script src="js/chat.js"></script>
-  <script src="js/camera.js"></script>
-  <script src="js/loadMonitor.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  <script src="js/ioa.js"></script>
 </body>
 
 </html>

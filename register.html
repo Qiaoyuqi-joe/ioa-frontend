@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register New Agent - IOA</title>
+  <link rel="stylesheet" href="css/register-style.css">
+</head>
+
+<body>
+  <header>
+    <img src="img/agent图标.png" alt="IOA Logo" class="logo">
+    <h1>IOA: Internet of Agent</h1>
+    <p class="subtitle">Register New Agent</p>
+  </header>
+
+  <div class="register-container">
+    <div class="register-card">
+      <div class="register-header">
+        <h2>Register New Agent</h2>
+        <p>Add a new agent to the IOA network</p>
+      </div>
+
+      <form id="registerForm" class="register-form">
+        <div class="form-section">
+          <h3>Agent Information</h3>
+          
+          <div class="form-group">
+            <label for="agentName">Agent Name *</label>
+            <input type="text" id="agentName" placeholder="e.g., VideoAnalyzer" required>
+          </div>
+
+          <div class="form-group">
+            <label for="agentType">Agent Type *</label>
+            <select id="agentType" required>
+              <option value="">Select Type</option>
+              <option value="agent">Agent</option>
+              <option value="llm">LLM</option>
+              <option value="tool">Tool</option>
+              <option value="compute">Computing Power</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="agentLayer">Architecture Layer *</label>
+            <select id="agentLayer" required>
+              <option value="">Select Layer</option>
+              <option value="terminal">Terminal Layer (终端层)</option>
+              <option value="edge">Edge Layer (边缘层)</option>
+              <option value="cloud">Cloud Layer (云层)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="agentDescription">Description *</label>
+            <textarea id="agentDescription" placeholder="Describe the capabilities of this agent..." rows="5" required></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="agentCapabilities">Key Capabilities *</label>
+            <input type="text" id="agentCapabilities" placeholder="e.g., video analysis, image processing, reporting (comma separated)" required>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3>Resource Allocation</h3>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="agentCpu">CPU Allocation (%)</label>
+              <input type="number" id="agentCpu" min="0" max="100" value="50" placeholder="50">
+            </div>
+
+            <div class="form-group">
+              <label for="agentMemory">Memory Allocation (%)</label>
+              <input type="number" id="agentMemory" min="0" max="100" value="50" placeholder="50">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3>Additional Settings</h3>
+
+          <div class="form-group">
+            <label for="agentEndpoint">API Endpoint (optional)</label>
+            <input type="text" id="agentEndpoint" placeholder="http://localhost:8001">
+          </div>
+
+          <div class="form-group checkbox">
+            <input type="checkbox" id="agentAutoStart" checked>
+            <label for="agentAutoStart">Auto-start after registration</label>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <a href="index.html" class="btn-secondary">Cancel</a>
+          <button type="submit" class="btn-primary">Register Agent</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="info-panel">
+      <div class="info-card">
+        <h3>What is an Agent?</h3>
+        <p>An agent is an autonomous entity in the IOA network that can perform specific tasks. It can be a specialized service, an LLM instance, a tool, or a computing resource.</p>
+      </div>
+
+      <div class="info-card">
+        <h3>Agent Types</h3>
+        <ul>
+          <li><strong>Agent:</strong> Task-performing service</li>
+          <li><strong>LLM:</strong> Language model instance</li>
+          <li><strong>Tool:</strong> Utility service</li>
+          <li><strong>Computing:</strong> Computing resource</li>
+        </ul>
+      </div>
+
+      <div class="info-card">
+        <h3>Resource Allocation</h3>
+        <p>Set the percentage of CPU and memory this agent can use. The system will manage resource allocation dynamically.</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/register.js"></script>
+</body>
+
+</html>
