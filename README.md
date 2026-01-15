@@ -1,8 +1,8 @@
-# Guardian Agent - 前端应用
+# ACRG — A Platform for Aggregating Agent Capabilities and Computing Resources Globally - 前端应用
 
 ## 概述
 
-Guardian Agent 是一个基于 **WebSocket** 的实时多Agent系统前端应用，用于视频分析、事故检测和多模态信息提取。
+ ACRG 是一个基于 **WebSocket** 的实时多Agent系统前端应用，用于视频分析、事故检测和多模态信息提取。
 
 ## ✨ 核心特性
 
