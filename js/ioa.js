@@ -462,7 +462,7 @@ function initializeNetworkGraph() {
   }, 3000);
 
   // 添加图例说明
-  addNetworkLegend();
+  // addNetworkLegend();
 
   let resizeTimer = null;
   window.addEventListener("resize", () => {
