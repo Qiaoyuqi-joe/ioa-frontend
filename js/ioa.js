@@ -213,6 +213,35 @@ function getSmoothStyle(index, roundness) {
   };
 }
 
+function getNodeStyleForLayer(layer) {
+  const style = {
+    size: 10,
+    borderWidth: 1.6,
+    borderColor: "#333",
+    shadowColor: "rgba(0, 0, 0, 0.12)",
+    shadowSize: 6,
+  };
+
+  if (layer === "cloud") {
+    style.size = 11;
+    style.borderWidth = 2;
+    style.borderColor = "#1a73e8";
+    style.shadowColor = "rgba(26, 115, 232, 0.3)";
+  } else if (layer === "edge") {
+    style.size = 10;
+    style.borderWidth = 1.8;
+    style.borderColor = "#f57c00";
+    style.shadowColor = "rgba(245, 124, 0, 0.3)";
+  } else if (layer === "terminal") {
+    style.size = 9;
+    style.borderWidth = 1.6;
+    style.borderColor = "#7b1fa2";
+    style.shadowColor = "rgba(123, 31, 162, 0.35)";
+  }
+
+  return style;
+}
+
 /**
  * 初始化网络拓扑图 - 云边端三层架构（3D层级效果）
  * 三个清晰的3D层，Agent按层放置，连线从上到下逐渐变粗
@@ -221,52 +250,14 @@ function initializeNetworkGraph() {
   const container = document.getElementById("networkGraph");
   const layoutMetrics = getLayoutMetrics(container);
 
-  // 为不同的Agent定义图标
-  const agentIcons = {
-    VideoAgent: "🎬",
-    KeyframeAgent: "🖼️",
-    MapAgent: "🗺️",
-    MeteorologyAgent: "🌤️",
-    ReportAgent: "📊",
-  };
-
   // 准备节点数据 - 按层级布局，根据资源大小调整节点大小
   const nodes = new vis.DataSet(
     agentDatabase.map((agent, index) => {
       const layer = agent.layer || "edge";
+      const style = getNodeStyleForLayer(layer);
 
       // 基础颜色 - 所有Agent都是绿色
       const baseColor = "#1d3f8f";
-
-      // 根据资源大小（CPU + Memory）调整节点大小
-      const resourceLevel = (agent.cpu + agent.memory) / 2;
-      let size = 35 + (resourceLevel / 100) * 20;
-
-      // 根据层级调整样式，体现3D效果
-      let borderWidth = 2;
-      let borderColor = "#333";
-      let shadowColor = "rgba(0, 0, 0, 0.1)";
-      let shadowSize = 10;
-
-      if (layer === "cloud") {
-        size = Math.max(size, 50); // 云层最大
-        borderWidth = 3;
-        borderColor = "#1a73e8"; // 蓝色边框
-        shadowColor = "rgba(26, 115, 232, 0.4)";
-        shadowSize = 8;
-      } else if (layer === "edge") {
-        size = Math.max(size, 45); // 边缘层中等
-        borderWidth = 2.5;
-        borderColor = "#f57c00"; // 橙色边框
-        shadowColor = "rgba(245, 124, 0, 0.3)";
-        shadowSize = 10;
-      } else if (layer === "terminal") {
-        size = Math.min(size, 40); // 终端层
-        borderWidth = 2;
-        borderColor = "#7b1fa2"; // 紫色边框
-        shadowColor = "rgba(123, 31, 162, 0.35)";
-        shadowSize = 12;
-      }
 
       // 按层级分组排列节点
       const layerAgents = agentDatabase.filter((a) => a.layer === layer);
@@ -279,16 +270,15 @@ function initializeNetworkGraph() {
         layoutMetrics
       );
 
-      // 获取图标
-      const icon = agentIcons[agent.name] || "⚙️";
-      const label = `${icon}\n${agent.name}`;
+      const label = agent.name;
 
       return {
         id: agent.id,
         label: label,
+        shape: "dot",
         color: {
           background: baseColor,
-          border: borderColor,
+          border: style.borderColor,
           highlight: {
             background: "#3a5fb7",
             border: "#000",
@@ -296,19 +286,21 @@ function initializeNetworkGraph() {
         },
         x: position.x,
         y: position.y,
-        size: size,
-        borderWidth: borderWidth,
+        size: style.size,
+        borderWidth: style.borderWidth,
         physics: false,
         font: {
           size: 12,
-          color: "#fff",
-          bold: { color: "#fff" },
-          multi: true,
+          color: "#1d3f8f",
+          align: "center",
+          vadjust: -18,
+          strokeWidth: 3,
+          strokeColor: "rgba(247, 249, 252, 0.9)",
         },
         shadow: {
           enabled: true,
-          color: shadowColor,
-          size: shadowSize,
+          color: style.shadowColor,
+          size: style.shadowSize,
           x: 0,
           y: 5,
         },
@@ -1486,11 +1478,14 @@ function highlightNodeInNetwork(nodeId) {
   // 获取节点信息
   const agent = agentDatabase.find((a) => a.id === nodeId);
   if (!agent) return;
+  const layer = agent.layer || "edge";
+  const baseStyle = getNodeStyleForLayer(layer);
+  const highlightSize = Math.max(baseStyle.size * 2.4, 18);
 
   // 高亮该节点
   window.networkGraph.nodes.update({
     id: nodeId,
-    size: 50,
+    size: highlightSize,
     color: {
       background: window.networkGraph.nodes.get(nodeId).color.background,
       border: "#FFD700",
@@ -1499,11 +1494,11 @@ function highlightNodeInNetwork(nodeId) {
         border: "#000",
       },
     },
-    borderWidth: 4,
+    borderWidth: baseStyle.borderWidth + 1.8,
     shadow: {
       enabled: true,
       color: "rgba(255, 215, 0, 0.5)",
-      size: 15,
+      size: 12,
       x: 5,
       y: 5,
     },
@@ -1524,47 +1519,22 @@ function highlightNodeInNetwork(nodeId) {
 
   // 3秒后取消高亮
   setTimeout(() => {
-    // 恢复原始大小和颜色（根据资源和层级）
-    const resourceLevel = (agent.cpu + agent.memory) / 2;
-    let size = 35 + (resourceLevel / 100) * 20;
-    let borderColor = "#333";
-    let borderWidth = 2;
-    let shadowColor = "rgba(0, 0, 0, 0.1)";
-
-    const layer = agent.layer || "edge";
-    if (layer === "cloud") {
-      size = Math.max(size, 55);
-      borderWidth = 3;
-      borderColor = "#1a73e8";
-      shadowColor = "rgba(26, 115, 232, 0.3)";
-    } else if (layer === "edge") {
-      size = Math.max(size, 45);
-      borderWidth = 2.5;
-      borderColor = "#f57c00";
-      shadowColor = "rgba(245, 124, 0, 0.2)";
-    } else if (layer === "terminal") {
-      size = Math.min(size, 40);
-      borderWidth = 2;
-      borderColor = "#7b1fa2";
-      shadowColor = "rgba(123, 31, 162, 0.2)";
-    }
-
     window.networkGraph.nodes.update({
       id: nodeId,
-      size: size,
+      size: baseStyle.size,
       color: {
         background: "#1d3f8f",
-        border: borderColor,
+        border: baseStyle.borderColor,
         highlight: {
           background: "#3a5fb7",
           border: "#000",
         },
       },
-      borderWidth: borderWidth,
+      borderWidth: baseStyle.borderWidth,
       shadow: {
         enabled: true,
-        color: shadowColor,
-        size: 10,
+        color: baseStyle.shadowColor,
+        size: baseStyle.shadowSize,
         x: 0,
         y: 4,
       },
@@ -1593,16 +1563,9 @@ function addAgentToNetwork(agent) {
     return;
   }
 
-  // 为不同的Agent定义图标
-  const agentIcons = {
-    VideoAgent: "🎬",
-    KeyframeAgent: "🖼️",
-    MapAgent: "🗺️",
-    MeteorologyAgent: "🌤️",
-    ReportAgent: "📊",
-  };
-
   const layer = agent.layer || "edge";
+  const style = getNodeStyleForLayer(layer);
+  const baseColor = "#1d3f8f";
   const layerAgents = agentDatabase.filter((a) => a.layer === layer);
   const indexInLayer = layerAgents.findIndex((a) => a.id === agent.id);
   const totalAgents = layerAgents.length;
@@ -1614,41 +1577,16 @@ function addAgentToNetwork(agent) {
     getLayoutMetrics(container)
   );
 
-  // 根据资源大小调整节点大小
-  const resourceLevel = (agent.cpu + agent.memory) / 2;
-  let size = 35 + (resourceLevel / 100) * 20;
-  let borderColor = "#333";
-  let borderWidth = 2;
-  let shadowColor = "rgba(0, 0, 0, 0.1)";
-
-  if (layer === "cloud") {
-    size = Math.max(size, 50);
-    borderWidth = 3;
-    borderColor = "#1a73e8";
-    shadowColor = "rgba(26, 115, 232, 0.4)";
-  } else if (layer === "edge") {
-    size = Math.max(size, 45);
-    borderWidth = 2.5;
-    borderColor = "#f57c00";
-    shadowColor = "rgba(245, 124, 0, 0.3)";
-  } else if (layer === "terminal") {
-    size = Math.min(size, 40);
-    borderWidth = 2;
-    borderColor = "#7b1fa2";
-    shadowColor = "rgba(123, 31, 162, 0.35)";
-  }
-
-  // 获取图标
-  const icon = agentIcons[agent.name] || "⚙️";
-  const label = `${icon}\n${agent.name}`;
+  const label = agent.name;
 
   // 添加节点
   window.networkGraph.nodes.add({
     id: agent.id,
     label: label,
+    shape: "dot",
     color: {
-      background: "#1d3f8f",
-      border: borderColor,
+      background: baseColor,
+      border: style.borderColor,
       highlight: {
         background: "#3a5fb7",
         border: "#000",
@@ -1656,19 +1594,21 @@ function addAgentToNetwork(agent) {
     },
     x: position.x,
     y: position.y,
-    size: size,
-    borderWidth: borderWidth,
+    size: style.size,
+    borderWidth: style.borderWidth,
     physics: false,
     font: {
       size: 12,
-      color: "#fff",
-      bold: { color: "#fff" },
-      multi: true,
+      color: baseColor,
+      align: "center",
+      vadjust: -18,
+      strokeWidth: 3,
+      strokeColor: "rgba(247, 249, 252, 0.9)",
     },
     shadow: {
       enabled: true,
-      color: shadowColor,
-      size: layer === "cloud" ? 8 : layer === "edge" ? 10 : 12,
+      color: style.shadowColor,
+      size: style.shadowSize,
       x: 0,
       y: 4,
     },
