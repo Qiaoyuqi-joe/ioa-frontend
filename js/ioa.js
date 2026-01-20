@@ -23,6 +23,46 @@ const agentDatabase = [
     relevance: 0,
   },
   {
+    id: "agent-registry",
+    name: "RegistryAgent",
+    type: "agent",
+    status: "active",
+    layer: "cloud",
+    cpu: 54,
+    memory: 61,
+    capabilities: ["registry", "agent catalog", "service discovery"],
+    description: "Cloud-layer agent registry and metadata indexing",
+    relevance: 0,
+  },
+  {
+    id: "agent-discovery",
+    name: "DiscoveryAgent",
+    type: "agent",
+    status: "active",
+    layer: "cloud",
+    cpu: 59,
+    memory: 66,
+    capabilities: ["semantic search", "routing", "capability matching"],
+    description: "Cloud-layer agent for discovery and routing decisions",
+    relevance: 0,
+  },
+  {
+    id: "agent-meteorology",
+    name: "MeteorologyAgent",
+    type: "agent",
+    status: "active",
+    layer: "edge",
+    cpu: 58,
+    memory: 68,
+    capabilities: [
+      "weather analysis",
+      "climate prediction",
+      "data integration",
+    ],
+    description: "Edge-layer agent for meteorological data analysis",
+    relevance: 0,
+  },
+  {
     id: "agent-keyframe",
     name: "KeyframeAgent",
     type: "agent",
@@ -52,27 +92,11 @@ const agentDatabase = [
     relevance: 0,
   },
   {
-    id: "agent-meteorology",
-    name: "MeteorologyAgent",
-    type: "agent",
-    status: "active",
-    layer: "cloud",
-    cpu: 58,
-    memory: 68,
-    capabilities: [
-      "weather analysis",
-      "climate prediction",
-      "data integration",
-    ],
-    description: "Cloud-layer agent for meteorological data analysis",
-    relevance: 0,
-  },
-  {
     id: "agent-report",
     name: "ReportAgent",
     type: "agent",
     status: "active",
-    layer: "terminal",
+    layer: "edge",
     cpu: 72,
     memory: 80,
     capabilities: [
@@ -82,46 +106,133 @@ const agentDatabase = [
       "export formatting",
     ],
     description:
-      "Terminal-layer agent for generating comprehensive reports from processed data",
+      "Edge-layer agent for generating structured reports from processed data",
     relevance: 0,
   },
 ];
 
-const LAYER_IMAGES = {
-  cloud: { width: 882, height: 271 },
-  edge: { width: 881, height: 218 },
-  terminal: { width: 883, height: 225 },
+const svgToDataUri = (svg) => `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+
+const TOPOLOGY_ICONS = {
+  agent: svgToDataUri(`
+    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64">
+      <polygon points="32,8 52,20 52,44 32,56 12,44 12,20"
+        fill="#eef3ff" stroke="#1b2f6b" stroke-width="3" stroke-linejoin="round"/>
+      <circle cx="24" cy="26" r="4" fill="#1a73e8"/>
+      <circle cx="40" cy="26" r="4" fill="#1a73e8"/>
+      <circle cx="32" cy="40" r="4" fill="#1a73e8"/>
+      <path d="M24 26 L32 40 L40 26" fill="none" stroke="#1a73e8" stroke-width="3"/>
+    </svg>
+  `),
+  bot: svgToDataUri(`
+    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64">
+      <rect x="10" y="16" width="44" height="34" rx="6" fill="#ffffff" stroke="#1b1b1b" stroke-width="3"/>
+      <circle cx="26" cy="33" r="4" fill="#1b1b1b"/>
+      <circle cx="38" cy="33" r="4" fill="#1b1b1b"/>
+      <rect x="24" y="41" width="16" height="4" rx="2" fill="#1b1b1b"/>
+      <line x1="32" y1="8" x2="32" y2="16" stroke="#1b1b1b" stroke-width="3"/>
+      <circle cx="32" cy="6" r="4" fill="#ffffff" stroke="#1b1b1b" stroke-width="3"/>
+    </svg>
+  `),
+  server: svgToDataUri(`
+    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64">
+      <rect x="18" y="8" width="28" height="16" rx="4" fill="#f7f7f7" stroke="#1b1b1b" stroke-width="3"/>
+      <rect x="18" y="26" width="28" height="16" rx="4" fill="#f7f7f7" stroke="#1b1b1b" stroke-width="3"/>
+      <rect x="18" y="44" width="28" height="12" rx="4" fill="#f7f7f7" stroke="#1b1b1b" stroke-width="3"/>
+      <circle cx="26" cy="16" r="2" fill="#1b1b1b"/>
+      <circle cx="26" cy="34" r="2" fill="#1b1b1b"/>
+      <circle cx="26" cy="50" r="2" fill="#1b1b1b"/>
+    </svg>
+  `),
+  gateway: svgToDataUri(`
+    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64">
+      <ellipse cx="32" cy="22" rx="22" ry="10" fill="#dbe7ff" stroke="#1b1b1b" stroke-width="3"/>
+      <rect x="10" y="22" width="44" height="20" fill="#c5d8ff" stroke="#1b1b1b" stroke-width="3"/>
+      <ellipse cx="32" cy="42" rx="22" ry="10" fill="#b4c9ff" stroke="#1b1b1b" stroke-width="3"/>
+      <path d="M22 26 L42 38" stroke="#1b1b1b" stroke-width="3"/>
+      <path d="M42 26 L22 38" stroke="#1b1b1b" stroke-width="3"/>
+    </svg>
+  `),
+  user: svgToDataUri(`
+    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64">
+      <circle cx="32" cy="22" r="12" fill="#ffffff" stroke="#1b1b1b" stroke-width="3"/>
+      <rect x="14" y="36" width="36" height="18" rx="9" fill="#ffffff" stroke="#1b1b1b" stroke-width="3"/>
+    </svg>
+  `),
+  phone: svgToDataUri(`
+    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64">
+      <rect x="20" y="6" width="24" height="52" rx="6" fill="#ffffff" stroke="#1b1b1b" stroke-width="3"/>
+      <rect x="24" y="14" width="16" height="30" rx="2" fill="#f2f2f2" stroke="#1b1b1b" stroke-width="2"/>
+      <circle cx="32" cy="50" r="2.5" fill="#1b1b1b"/>
+    </svg>
+  `),
+  desktop: svgToDataUri(`
+    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64">
+      <rect x="10" y="12" width="44" height="28" rx="4" fill="#ffffff" stroke="#1b1b1b" stroke-width="3"/>
+      <rect x="26" y="40" width="12" height="8" fill="#ffffff" stroke="#1b1b1b" stroke-width="3"/>
+      <rect x="18" y="48" width="28" height="6" rx="3" fill="#ffffff" stroke="#1b1b1b" stroke-width="3"/>
+    </svg>
+  `),
 };
+
+const LAYER_IMAGES = {};
 const LAYER_ANCHORS = {
-  cloud: [
-    { x: 219.0, y: 138.0 },
-    { x: 313.0, y: 170.5 },
-    { x: 344.5, y: 67.0 },
-    { x: 480.0, y: 180.0 },
-    { x: 532.5, y: 67.0 },
-    { x: 652.5, y: 119.0 },
-  ],
-  edge: [
-    { x: 137.5, y: 168.5 },
-    { x: 219.5, y: 37.5 },
-    { x: 649.0, y: 167.5 },
-    { x: 730.0, y: 34.0 },
-  ],
-  terminal: [
-    { x: 180.5, y: 146.5 },
-    { x: 188.5, y: 91.0 },
-    { x: 391.5, y: 63.5 },
-    { x: 436.0, y: 178.5 },
-    { x: 439.0, y: 47.5 },
-    { x: 628.5, y: 56.5 },
-    { x: 675.5, y: 105.5 },
-  ],
+  cloud: [],
+  edge: [],
+  terminal: [],
+};
+
+const INFRA_NODE_META = {
+  "infra-cloud-bot-left": { image: TOPOLOGY_ICONS.bot, size: 22, label: "" },
+  "infra-cloud-bot-mid": { image: TOPOLOGY_ICONS.bot, size: 22, label: "" },
+  "infra-cloud-server": {
+    image: TOPOLOGY_ICONS.server,
+    size: 22,
+    label: "Server",
+    labelOffset: -12,
+    labelSize: 9,
+  },
+  "infra-edge-server-left": {
+    image: TOPOLOGY_ICONS.server,
+    size: 22,
+    label: "Server",
+    labelOffset: -12,
+    labelSize: 9,
+  },
+  "infra-edge-server-right": {
+    image: TOPOLOGY_ICONS.server,
+    size: 22,
+    label: "Server",
+    labelOffset: -12,
+    labelSize: 9,
+  },
+  "infra-edge-gateway-left": {
+    image: TOPOLOGY_ICONS.gateway,
+    size: 24,
+    label: "Gateway",
+    labelOffset: 12,
+    labelSize: 9,
+  },
+  "infra-edge-gateway-right": {
+    image: TOPOLOGY_ICONS.gateway,
+    size: 24,
+    label: "Gateway",
+    labelOffset: 12,
+    labelSize: 9,
+  },
+  "infra-terminal-user-left": { image: TOPOLOGY_ICONS.user, size: 22, label: "User" },
+  "infra-terminal-phone-left": { image: TOPOLOGY_ICONS.phone, size: 22, label: "Phone" },
+  "infra-terminal-user-right": { image: TOPOLOGY_ICONS.user, size: 22, label: "User" },
+  "infra-terminal-desktop-left": { image: TOPOLOGY_ICONS.desktop, size: 22, label: "Desktop" },
+  "infra-terminal-desktop-right": { image: TOPOLOGY_ICONS.desktop, size: 22, label: "Desktop" },
+  "infra-terminal-phone-right": { image: TOPOLOGY_ICONS.phone, size: 22, label: "Phone" },
 };
 const LINK_COLORS = {
   primary: "#ff6d2d",
   secondary: "#ffb48f",
   highlight: "#ff3d00",
 };
+const IN_LAYER_COLOR = "#2e4f93";
 
 // 应用状态
 let appState = {
@@ -155,7 +266,6 @@ document.addEventListener("DOMContentLoaded", function () {
 function initializeStats() {
   const agents = agentDatabase.filter((a) => a.type === "agent");
   const edgeAgents = agents.filter((a) => a.layer === "edge");
-  const terminalAgents = agents.filter((a) => a.layer === "terminal");
 
   const setStat = (id, value) => {
     const target = document.getElementById(id);
@@ -166,8 +276,7 @@ function initializeStats() {
 
   setStat("totalNodes", agentDatabase.length);
   setStat("agentCount", agents.length);
-  setStat("toolCount", edgeAgents.length);
-  setStat("computeCount", terminalAgents.length);
+  setStat("toolCount", 16);
 }
 
 /**
@@ -177,10 +286,10 @@ function getLayoutMetrics(container) {
   const bounds = container.getBoundingClientRect();
   const width = Math.max(bounds.width || 0, 520);
   const height = Math.max(bounds.height || 0, 420);
-  const verticalGap = Math.max(160, Math.min(260, height * 0.28));
-  const minSpacing = Math.max(150, width * 0.18);
-  const maxSpacing = Math.max(minSpacing + 10, Math.min(340, width * 0.34));
-  const paddingX = Math.max(30, width * 0.08);
+  const verticalGap = Math.max(150, Math.min(240, height * 0.3));
+  const minSpacing = Math.max(120, width * 0.16);
+  const maxSpacing = Math.max(minSpacing + 8, Math.min(320, width * 0.3));
+  const paddingX = Math.max(18, width * 0.05);
 
   return {
     width,
@@ -189,6 +298,32 @@ function getLayoutMetrics(container) {
     minSpacing,
     maxSpacing,
     paddingX,
+  };
+}
+
+function getLayerRowMetrics(metrics) {
+  const inset = 14;
+  const gap = 14;
+  const rowHeight = Math.max(
+    120,
+    (metrics.height - inset * 2 - gap * 2) / 3
+  );
+
+  return { inset, gap, rowHeight };
+}
+
+function getLayerRowCenters(metrics) {
+  const { inset, gap, rowHeight } = getLayerRowMetrics(metrics);
+  const centers = [
+    inset + rowHeight / 2,
+    inset + rowHeight / 2 + rowHeight + gap,
+    inset + rowHeight / 2 + 2 * (rowHeight + gap),
+  ];
+
+  return {
+    cloud: centers[0] - metrics.height / 2,
+    edge: centers[1] - metrics.height / 2,
+    terminal: centers[2] - metrics.height / 2,
   };
 }
 
@@ -296,11 +431,37 @@ function observeTopologyLayout(container, network) {
 }
 
 function getLayerPosition(layer, indexInLayer, totalAgents, metrics) {
-  const layerY = {
-    cloud: -metrics.verticalGap,
-    edge: 0,
-    terminal: metrics.verticalGap,
-  };
+  const layerY = getLayerRowCenters(metrics);
+  const bandWidth = metrics.width - metrics.paddingX * 2;
+
+  if (layer === "edge" && totalAgents === 4) {
+    const span = Math.min(bandWidth * 0.76, bandWidth - 40);
+    const rowGap = Math.max(
+      64,
+      Math.min(110, getLayerRowMetrics(metrics).rowHeight * 0.45)
+    );
+    const shift = span * 0.06;
+    const leftX = -span / 2;
+    const rightX = span / 2;
+    const positions = [
+      { x: leftX, y: -rowGap / 2 },
+      { x: leftX + shift, y: rowGap / 2 },
+      { x: rightX - shift, y: -rowGap / 2 },
+      { x: rightX, y: rowGap / 2 },
+    ];
+    const fallback = positions[indexInLayer] ?? { x: 0, y: 0 };
+    return { x: fallback.x, y: fallback.y + (layerY.edge ?? 0) };
+  }
+
+  if (layer === "cloud" && totalAgents === 3) {
+    const span = Math.min(bandWidth * 0.84, bandWidth - 44);
+    const spacing = span / 2;
+    const startX = -span / 2;
+    return {
+      x: startX + indexInLayer * spacing,
+      y: layerY.cloud ?? layerY.edge,
+    };
+  }
 
   const availableWidth = metrics.width - metrics.paddingX * 2;
   const spacing =
@@ -318,6 +479,189 @@ function getLayerPosition(layer, indexInLayer, totalAgents, metrics) {
     (indexInLayer - (totalAgents - 1) / 2) * tilt;
 
   return { x: startX + indexInLayer * spacing, y };
+}
+
+function clampValue(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function getInfraNodesLayout(metrics) {
+  const { rowHeight } = getLayerRowMetrics(metrics);
+  const rowCenters = getLayerRowCenters(metrics);
+  const cloudPositions = [0, 1, 2].map((index) =>
+    getLayerPosition("cloud", index, 3, metrics)
+  );
+  const edgePositions = [0, 1, 2, 3].map((index) =>
+    getLayerPosition("edge", index, 4, metrics)
+  );
+  const terminalBase = getLayerPosition("terminal", 0, 1, metrics).y;
+  const widthHalf = metrics.width / 2 - 24;
+  const heightHalf = metrics.height / 2 - 24;
+  const bandHalf = (metrics.width - metrics.paddingX * 2) / 2;
+  const bandPaddingX = Math.max(42, metrics.width * 0.08);
+  const bandMinX = -bandHalf + bandPaddingX;
+  const bandMaxX = bandHalf - bandPaddingX;
+  const bandPaddingY = Math.max(18, rowHeight * 0.18);
+
+  const cloudOffsetLimit = Math.max(
+    40,
+    widthHalf - Math.abs(cloudPositions[0].x)
+  );
+  const cloudOffsetX = Math.min(
+    Math.max(bandHalf * 0.22, metrics.width * 0.07),
+    cloudOffsetLimit
+  );
+  const cloudOffsetY = Math.max(8, rowHeight * 0.14);
+  const edgeOffsetLimit = Math.max(
+    50,
+    Math.min(
+      widthHalf - Math.abs(edgePositions[0].x),
+      widthHalf - Math.abs(edgePositions[2].x)
+    )
+  );
+  const edgeOffsetX = Math.min(
+    Math.max(bandHalf * 0.26, metrics.width * 0.08),
+    edgeOffsetLimit
+  );
+  const edgeOffsetY = Math.max(26, rowHeight * 0.24);
+  const terminalCount = 6;
+  const terminalSpacing = Math.min(
+    Math.max(82, metrics.width * 0.13),
+    (metrics.width - 56) / Math.max(terminalCount - 1, 1)
+  );
+  const terminalStartX = -((terminalCount - 1) * terminalSpacing) / 2;
+  const terminalY = Math.min(
+    terminalBase + Math.max(34, rowHeight * 0.22),
+    heightHalf - 10
+  );
+
+  const rowBounds = {
+    cloud: {
+      min: rowCenters.cloud - rowHeight / 2 + bandPaddingY,
+      max: rowCenters.cloud + rowHeight / 2 - bandPaddingY,
+    },
+    edge: {
+      min: rowCenters.edge - rowHeight / 2 + bandPaddingY,
+      max: rowCenters.edge + rowHeight / 2 - bandPaddingY,
+    },
+    terminal: {
+      min: rowCenters.terminal - rowHeight / 2 + bandPaddingY,
+      max: rowCenters.terminal + rowHeight / 2 - bandPaddingY,
+    },
+  };
+
+  const clampToLayer = (layout) => {
+    const layer = layout.id.includes("cloud")
+      ? "cloud"
+      : layout.id.includes("edge")
+        ? "edge"
+        : "terminal";
+    const bounds = rowBounds[layer];
+    return {
+      ...layout,
+      x: clampValue(layout.x, bandMinX, bandMaxX),
+      y: clampValue(layout.y, bounds.min, bounds.max),
+    };
+  };
+
+  return [
+    {
+      id: "infra-cloud-bot-left",
+      x: cloudPositions[0].x - cloudOffsetX,
+      y: cloudPositions[0].y - cloudOffsetY * 0.9,
+    },
+    {
+      id: "infra-cloud-bot-mid",
+      x: cloudPositions[1].x - cloudOffsetX * 0.6,
+      y: cloudPositions[1].y - cloudOffsetY * 0.9,
+    },
+    {
+      id: "infra-cloud-server",
+      x: cloudPositions[2].x + cloudOffsetX * 1.1,
+      y: cloudPositions[2].y - cloudOffsetY * 1.4,
+    },
+    {
+      id: "infra-edge-server-left",
+      x: edgePositions[0].x - edgeOffsetX * 1.15,
+      y: edgePositions[0].y - edgeOffsetY * 1.3,
+    },
+    {
+      id: "infra-edge-gateway-left",
+      x: edgePositions[1].x - edgeOffsetX * 1.15,
+      y: edgePositions[1].y + edgeOffsetY * 1.3,
+    },
+    {
+      id: "infra-edge-server-right",
+      x: edgePositions[2].x + edgeOffsetX * 1.15,
+      y: edgePositions[2].y - edgeOffsetY * 1.3,
+    },
+    {
+      id: "infra-edge-gateway-right",
+      x: edgePositions[3].x + edgeOffsetX * 1.25,
+      y: edgePositions[3].y + edgeOffsetY * 1.4,
+    },
+    {
+      id: "infra-terminal-user-left",
+      x: terminalStartX,
+      y: terminalY,
+    },
+    {
+      id: "infra-terminal-phone-left",
+      x: terminalStartX + terminalSpacing,
+      y: terminalY,
+    },
+    {
+      id: "infra-terminal-user-right",
+      x: terminalStartX + terminalSpacing * 2,
+      y: terminalY,
+    },
+    {
+      id: "infra-terminal-desktop-left",
+      x: terminalStartX + terminalSpacing * 3,
+      y: terminalY,
+    },
+    {
+      id: "infra-terminal-desktop-right",
+      x: terminalStartX + terminalSpacing * 4,
+      y: terminalY,
+    },
+    {
+      id: "infra-terminal-phone-right",
+      x: terminalStartX + terminalSpacing * 5,
+      y: terminalY,
+    },
+  ].map(clampToLayer);
+}
+
+function createInfraNodes(metrics) {
+  return getInfraNodesLayout(metrics).map((layout) => {
+    const meta = INFRA_NODE_META[layout.id];
+    const label = meta.label || "";
+    const labelOffset =
+      typeof meta.labelOffset === "number" ? meta.labelOffset : 12;
+    const labelSize = meta.labelSize || (label ? 11 : 0);
+    return {
+      id: layout.id,
+      label,
+      shape: "image",
+      image: meta.image,
+      size: meta.size,
+      x: layout.x,
+      y: layout.y,
+      fixed: true,
+      physics: false,
+      selectable: false,
+      hover: false,
+      font: {
+        size: labelSize,
+        color: "#1b2f6b",
+        align: "center",
+        vadjust: labelOffset,
+        strokeWidth: 3,
+        strokeColor: "rgba(247, 249, 252, 0.9)",
+      },
+    };
+  });
 }
 
 function applyTopologyLayout(container, nodes, network) {
@@ -348,6 +692,14 @@ function applyTopologyLayout(container, nodes, network) {
   });
 
   nodes.update(updates);
+
+  const metrics = getLayoutMetrics(container);
+  const infraUpdates = getInfraNodesLayout(metrics).map((layout) => ({
+    id: layout.id,
+    x: layout.x,
+    y: layout.y,
+  }));
+  nodes.update(infraUpdates);
 }
 
 /**
@@ -360,27 +712,148 @@ function getSmoothStyle(index, roundness) {
   };
 }
 
+function buildTopologyEdges(edgeSet) {
+  edgeSet.clear();
+
+  const terminalAgents = agentDatabase.filter((a) => a.layer === "terminal");
+  const edgeAgents = agentDatabase.filter((a) => a.layer === "edge");
+  const cloudAgents = agentDatabase.filter((a) => a.layer === "cloud");
+
+  const addEdge = (from, to, options) => {
+    edgeSet.add({
+      from,
+      to,
+      color: {
+        color: options.color,
+        highlight: LINK_COLORS.highlight,
+      },
+      width: options.width,
+      dashes: options.dashes,
+      smooth: options.smooth,
+    });
+  };
+
+  // Edge-layer in-layer links (parallelogram when 4 nodes).
+  if (edgeAgents.length === 4) {
+    const [topLeft, bottomLeft, topRight, bottomRight] = edgeAgents;
+    [
+      [topLeft, topRight],
+      [bottomLeft, bottomRight],
+      [topLeft, bottomLeft],
+      [topRight, bottomRight],
+    ].forEach(([from, to], index) => {
+      addEdge(from.id, to.id, {
+        color: IN_LAYER_COLOR,
+        width: 2.4,
+        dashes: [6, 6],
+        smooth: false,
+      });
+    });
+  } else if (edgeAgents.length > 1) {
+    edgeAgents.slice(0, -1).forEach((agent, index) => {
+      addEdge(agent.id, edgeAgents[index + 1].id, {
+        color: IN_LAYER_COLOR,
+        width: 2.2,
+        dashes: [6, 6],
+        smooth: false,
+      });
+    });
+  }
+
+  // Terminal layer connects up to the nearest edge agent.
+  if (terminalAgents.length && edgeAgents.length) {
+    terminalAgents.forEach((agent, index) => {
+      const target = edgeAgents[index % edgeAgents.length];
+      addEdge(agent.id, target.id, {
+        color: LINK_COLORS.primary,
+        width: 2.2,
+        dashes: [6, 8],
+        smooth: getSmoothStyle(index, 0.18),
+      });
+    });
+  }
+
+  // Cloud to edge links (one-to-one for a clean layout).
+  if (cloudAgents.length && edgeAgents.length) {
+    const targets =
+      cloudAgents.length === 3 && edgeAgents.length >= 3
+        ? [1, 2, 3]
+        : cloudAgents.map((_, index) => index % edgeAgents.length);
+
+    cloudAgents.forEach((agent, index) => {
+      const edgeIndex = targets[index % targets.length] % edgeAgents.length;
+      const target = edgeAgents[edgeIndex];
+      addEdge(agent.id, target.id, {
+        color: LINK_COLORS.primary,
+        width: 3.2,
+        dashes: false,
+        smooth: getSmoothStyle(index, 0.24),
+      });
+    });
+  }
+
+  const infraLinks = [
+    { from: "infra-cloud-bot-left", to: "agent-video", color: IN_LAYER_COLOR },
+    { from: "infra-cloud-bot-mid", to: "agent-registry", color: IN_LAYER_COLOR },
+    { from: "infra-cloud-server", to: "agent-discovery", color: IN_LAYER_COLOR },
+    { from: "infra-edge-server-left", to: "agent-meteorology", color: IN_LAYER_COLOR },
+    { from: "infra-edge-gateway-left", to: "agent-keyframe", color: IN_LAYER_COLOR },
+    { from: "infra-edge-server-right", to: "agent-map", color: IN_LAYER_COLOR },
+    { from: "infra-edge-gateway-right", to: "agent-report", color: IN_LAYER_COLOR },
+  ];
+
+  infraLinks.forEach((link, index) => {
+    addEdge(link.from, link.to, {
+      color: link.color,
+      width: 2,
+      dashes: [6, 6],
+      smooth: getSmoothStyle(index, 0.1),
+    });
+  });
+
+  const terminalDevices = [
+    "infra-terminal-user-left",
+    "infra-terminal-phone-left",
+    "infra-terminal-user-right",
+    "infra-terminal-desktop-left",
+    "infra-terminal-desktop-right",
+    "infra-terminal-phone-right",
+  ];
+
+  if (edgeAgents.length) {
+    terminalDevices.forEach((id, index) => {
+      const target = edgeAgents[index % edgeAgents.length];
+      addEdge(id, target.id, {
+        color: LINK_COLORS.primary,
+        width: 2,
+        dashes: [6, 8],
+        smooth: getSmoothStyle(index, 0.18),
+      });
+    });
+  }
+}
+
 function getNodeStyleForLayer(layer) {
   const style = {
-    size: 10,
-    borderWidth: 1.6,
+    size: 26,
+    borderWidth: 1.8,
     borderColor: "#333",
     shadowColor: "rgba(0, 0, 0, 0.12)",
     shadowSize: 6,
   };
 
   if (layer === "cloud") {
-    style.size = 11;
+    style.size = 30;
     style.borderWidth = 2;
     style.borderColor = "#1a73e8";
     style.shadowColor = "rgba(26, 115, 232, 0.3)";
   } else if (layer === "edge") {
-    style.size = 10;
+    style.size = 28;
     style.borderWidth = 1.8;
     style.borderColor = "#f57c00";
     style.shadowColor = "rgba(245, 124, 0, 0.3)";
   } else if (layer === "terminal") {
-    style.size = 9;
+    style.size = 24;
     style.borderWidth = 1.6;
     style.borderColor = "#7b1fa2";
     style.shadowColor = "rgba(123, 31, 162, 0.35)";
@@ -398,8 +871,7 @@ function initializeNetworkGraph() {
   const layoutMetrics = getLayoutMetrics(container);
 
   // 准备节点数据 - 按层级布局，根据资源大小调整节点大小
-  const nodes = new vis.DataSet(
-    agentDatabase.map((agent, index) => {
+  const nodeItems = agentDatabase.map((agent, index) => {
       const layer = agent.layer || "edge";
       const style = getNodeStyleForLayer(layer);
 
@@ -422,7 +894,8 @@ function initializeNetworkGraph() {
       return {
         id: agent.id,
         label: label,
-        shape: "dot",
+        shape: "image",
+        image: TOPOLOGY_ICONS.agent,
         color: {
           background: baseColor,
           border: style.borderColor,
@@ -440,7 +913,7 @@ function initializeNetworkGraph() {
           size: 12,
           color: "#1d3f8f",
           align: "center",
-          vadjust: -18,
+        vadjust: 8,
           strokeWidth: 3,
           strokeColor: "rgba(247, 249, 252, 0.9)",
         },
@@ -459,55 +932,14 @@ function initializeNetworkGraph() {
         ).toFixed(0)}%`,
         layer: layer,
       };
-    })
-  );
-
-  // 准备边数据 - 云边端三层架构的连接关系
-  const edges = [];
-  const edgeSet = new vis.DataSet(edges);
-
-  // 初始化边 - 云边端三层架构的Agent连接
-  const terminalAgents = agentDatabase.filter((a) => a.layer === "terminal");
-  const edgeAgents = agentDatabase.filter((a) => a.layer === "edge");
-  const cloudAgents = agentDatabase.filter((a) => a.layer === "cloud");
-
-  // 终端层连接到边缘层 - 入口链路
-  terminalAgents.forEach((agent, terminalIndex) => {
-    edgeAgents.forEach((edgeAgent, edgeIndex) => {
-      const isPrimary = edgeIndex === terminalIndex % Math.max(edgeAgents.length, 1);
-      edgeSet.add({
-        from: agent.id,
-        to: edgeAgent.id,
-        color: {
-          color: isPrimary ? LINK_COLORS.primary : LINK_COLORS.secondary,
-          highlight: LINK_COLORS.highlight,
-        },
-        width: isPrimary ? 2.6 : 2.1,
-        dashes: isPrimary ? false : [6, 5],
-        arrows: { to: { enabled: true, scaleFactor: 0.6 } },
-        smooth: getSmoothStyle(terminalIndex + edgeIndex, 0.22),
-      });
     });
-  });
 
-  // 边缘层连接到云层 - 主干链路
-  edgeAgents.forEach((agent, edgeIndex) => {
-    cloudAgents.forEach((cloudAgent, cloudIndex) => {
-      const isPrimary = cloudIndex === edgeIndex % Math.max(cloudAgents.length, 1);
-      edgeSet.add({
-        from: agent.id,
-        to: cloudAgent.id,
-        color: {
-          color: isPrimary ? LINK_COLORS.primary : LINK_COLORS.secondary,
-          highlight: LINK_COLORS.highlight,
-        },
-        width: isPrimary ? 3.4 : 2.2,
-        dashes: isPrimary ? false : [6, 5],
-        arrows: { to: { enabled: true, scaleFactor: 0.7 } },
-        smooth: getSmoothStyle(edgeIndex + cloudIndex, isPrimary ? 0.18 : 0.28),
-      });
-    });
-  });
+  nodeItems.push(...createInfraNodes(layoutMetrics));
+
+  const nodes = new vis.DataSet(nodeItems);
+
+  const edgeSet = new vis.DataSet();
+  buildTopologyEdges(edgeSet);
 
   // 获取网络实例的全局引用以支持动态更新
   window.networkGraph = { nodes, edges: edgeSet };
@@ -532,7 +964,7 @@ function initializeNetworkGraph() {
     },
     edges: {
       shadow: {
-        enabled: true,
+        enabled: false,
         color: "rgba(0, 0, 0, 0.12)",
         size: 6,
         x: 0,
@@ -879,56 +1311,6 @@ function initializeChatSystem() {
     return escapeHtml(text).replace(/\n/g, "<br>");
   }
 
-  function parseRawResult(rawResult) {
-    if (!rawResult) return null;
-    if (typeof rawResult === "object") return rawResult;
-    if (typeof rawResult !== "string") return null;
-    const trimmed = rawResult.trim();
-    if (!trimmed) return null;
-    try {
-      return JSON.parse(trimmed);
-    } catch (error) {
-      return null;
-    }
-  }
-
-  function extractObservationFromLogs(logs) {
-    if (!Array.isArray(logs)) return "";
-
-    for (const entry of logs) {
-      if (!entry || typeof entry !== "object") continue;
-      for (const value of Object.values(entry)) {
-        if (typeof value !== "string") continue;
-        const match = value.match(
-          /Observation:\s*([\s\S]*?)(?:\n[A-Z][a-zA-Z]+\(|\nKeyframeExtractor|\nQuestion:|\nRaw Answer:|$)/
-        );
-        if (match && match[1] && match[1].trim()) {
-          return match[1].trim();
-        }
-      }
-    }
-
-    return "";
-  }
-
-  function extractResultText(parsed) {
-    if (!parsed || typeof parsed !== "object") return "";
-
-    const rawAnswer = parsed.raw_answer || parsed.answer || parsed.final_answer;
-    if (typeof rawAnswer === "string" && rawAnswer.trim()) {
-      return rawAnswer.trim();
-    }
-
-    const normalized = parsed.normalized_answer;
-    if (typeof normalized === "string" && normalized.trim()) {
-      return normalized.trim();
-    }
-
-    const observation = extractObservationFromLogs(parsed.logs);
-    if (observation) return observation;
-
-    return "";
-  }
 
   const STREAM_SPEED = {
     slow: 100,
@@ -1333,46 +1715,35 @@ function initializeChatSystem() {
     let hasAnswer = false;
     let answerDiv = null;
 
+    const answerText =
+      (typeof data.answer?.text === "string" && data.answer.text.trim()) ||
+      (typeof data.answer_text === "string" && data.answer_text.trim()) ||
+      "";
+
     if (typeof data.answer === "object" && data.answer !== null) {
-      answerDiv = createAssistantMessage();
-      const header = document.createElement("div");
-      const headerStrong = document.createElement("strong");
-      headerStrong.textContent = "📋 分析结果:";
-      header.appendChild(headerStrong);
-      answerDiv.appendChild(header);
-
-      // ✅ 1) 优先用后端已清洗好的 answer_text
-      const answerText =
-      (typeof data.answer_text === "string" && data.answer_text.trim())
-        ? data.answer_text.trim()
-        : (typeof data.answer?.text === "string" && data.answer.text.trim())
-          ? data.answer.text.trim()
-          : "";
-
-      // ✅ 2) 如果 answer_text 为空，再兜底从 raw_result 里提取（但只当兜底）
-      let fallback = "";
-      if (!answerText) {
-      const rawResult = data.answer?.raw_result || data.raw_result || "";
-      const parsed = parseRawResult(rawResult);
-      fallback = extractResultText(parsed) || "";
-      }
-
-      const finalText = answerText || fallback || "（无可展示输出）";
-
-      if (finalText) {
-        appendStreamBlock(answerDiv, "📌 结果:", finalText, STREAM_SPEED.fast);
-        hasAnswer = true;
-      }
-
       const images = Array.isArray(data.answer.images)
         ? data.answer.images
         : [];
       const keyframe = data.answer.keyframe ? [data.answer.keyframe] : [];
       const allImages = [...images, ...keyframe];
 
+      if (answerText || allImages.length) {
+        answerDiv = createAssistantMessage();
+        const header = document.createElement("div");
+        const headerStrong = document.createElement("strong");
+        headerStrong.textContent = "📋 分析结果:";
+        header.appendChild(headerStrong);
+        answerDiv.appendChild(header);
+      }
+
+      if (answerText && answerDiv) {
+        appendStreamBlock(answerDiv, "📌 结果:", answerText, STREAM_SPEED.fast);
+        hasAnswer = true;
+      }
+
       allImages.forEach((image) => {
         const src = image?.data_uri || image?.url;
-        if (!src) return;
+        if (!src || !answerDiv) return;
 
         let imageUrl = src;
         if (!imageUrl.startsWith("data:") && !imageUrl.startsWith("http")) {
@@ -1397,32 +1768,9 @@ function initializeChatSystem() {
         answerDiv.appendChild(img);
         hasAnswer = true;
       });
-    } else if (typeof data.answer === "string" && data.answer) {
-      const parsed = parseRawResult(data.answer);
-      const parsedText = extractResultText(parsed);
-      const finalText = parsedText || data.answer;
+    } else if (answerText) {
       answerDiv = createAssistantMessage();
-      appendStreamBlock(answerDiv, "📋 结果:", finalText, STREAM_SPEED.fast);
-      hasAnswer = true;
-    } else if (data.answer_text) {
-      const parsed = parseRawResult(data.answer_text);
-      const parsedText = extractResultText(parsed);
-      const finalText = parsedText || data.answer_text;
-      answerDiv = createAssistantMessage();
-      appendStreamBlock(answerDiv, "📋 结果:", finalText, STREAM_SPEED.fast);
-      hasAnswer = true;
-    } else if (data.message) {
-      answerDiv = createAssistantMessage();
-      appendStreamBlock(answerDiv, "📋 结果:", data.message, STREAM_SPEED.fast);
-      hasAnswer = true;
-    } else if (data.result && data.result.normalized_answer) {
-      answerDiv = createAssistantMessage();
-      appendStreamBlock(
-        answerDiv,
-        "📋 结果:",
-        data.result.normalized_answer,
-        STREAM_SPEED.fast
-      );
+      appendStreamBlock(answerDiv, "📋 结果:", answerText, STREAM_SPEED.fast);
       hasAnswer = true;
     }
 
@@ -1629,7 +1977,7 @@ function highlightNodeInNetwork(nodeId) {
   if (!agent) return;
   const layer = agent.layer || "edge";
   const baseStyle = getNodeStyleForLayer(layer);
-  const highlightSize = Math.max(baseStyle.size * 2.4, 18);
+  const highlightSize = Math.max(baseStyle.size * 1.6, baseStyle.size + 8);
 
   // 高亮该节点
   window.networkGraph.nodes.update({
@@ -1733,7 +2081,8 @@ function addAgentToNetwork(agent) {
   window.networkGraph.nodes.add({
     id: agent.id,
     label: label,
-    shape: "dot",
+    shape: "image",
+    image: TOPOLOGY_ICONS.agent,
     color: {
       background: baseColor,
       border: style.borderColor,
@@ -1751,7 +2100,7 @@ function addAgentToNetwork(agent) {
       size: 12,
       color: baseColor,
       align: "center",
-      vadjust: -18,
+      vadjust: 8,
       strokeWidth: 3,
       strokeColor: "rgba(247, 249, 252, 0.9)",
     },
@@ -1771,81 +2120,7 @@ function addAgentToNetwork(agent) {
     layer: layer,
   });
 
-  // 添加边 - 连接相邻层级
-  if (layer === "terminal") {
-    const edgeAgents = agentDatabase.filter((a) => a.layer === "edge");
-    edgeAgents.forEach((edgeAgent, edgeIndex) => {
-      const isPrimary = edgeIndex === indexInLayer % Math.max(edgeAgents.length, 1);
-      window.networkGraph.edges.add({
-        from: agent.id,
-        to: edgeAgent.id,
-        color: {
-          color: isPrimary ? LINK_COLORS.primary : LINK_COLORS.secondary,
-          highlight: LINK_COLORS.highlight,
-        },
-        width: isPrimary ? 2.6 : 2.1,
-        dashes: isPrimary ? false : [6, 5],
-        arrows: { to: { enabled: true, scaleFactor: 0.6 } },
-        smooth: getSmoothStyle(edgeIndex + indexInLayer, 0.22),
-      });
-    });
-  } else if (layer === "edge") {
-    const cloudAgents = agentDatabase.filter((a) => a.layer === "cloud");
-    const terminalAgents = agentDatabase.filter((a) => a.layer === "terminal");
-    const edgeAgents = agentDatabase.filter((a) => a.layer === "edge");
-
-    terminalAgents.forEach((terminalAgent, terminalIndex) => {
-      const isPrimary =
-        indexInLayer === terminalIndex % Math.max(edgeAgents.length, 1);
-      window.networkGraph.edges.add({
-        from: terminalAgent.id,
-        to: agent.id,
-        color: {
-          color: isPrimary ? LINK_COLORS.primary : LINK_COLORS.secondary,
-          highlight: LINK_COLORS.highlight,
-        },
-        width: isPrimary ? 2.6 : 2.1,
-        dashes: isPrimary ? false : [6, 5],
-        arrows: { to: { enabled: true, scaleFactor: 0.6 } },
-        smooth: getSmoothStyle(terminalIndex + indexInLayer, 0.22),
-      });
-    });
-
-    cloudAgents.forEach((cloudAgent, cloudIndex) => {
-      const isPrimary = cloudIndex === indexInLayer % Math.max(cloudAgents.length, 1);
-      window.networkGraph.edges.add({
-        from: agent.id,
-        to: cloudAgent.id,
-        color: {
-          color: isPrimary ? LINK_COLORS.primary : LINK_COLORS.secondary,
-          highlight: LINK_COLORS.highlight,
-        },
-        width: isPrimary ? 3.4 : 2.2,
-        dashes: isPrimary ? false : [6, 5],
-        arrows: { to: { enabled: true, scaleFactor: 0.7 } },
-        smooth: getSmoothStyle(indexInLayer + cloudIndex, isPrimary ? 0.18 : 0.28),
-      });
-    });
-  } else if (layer === "cloud") {
-    const edgeAgents = agentDatabase.filter((a) => a.layer === "edge");
-    const cloudAgents = agentDatabase.filter((a) => a.layer === "cloud");
-    edgeAgents.forEach((edgeAgent, edgeIndex) => {
-      const isPrimary =
-        indexInLayer === edgeIndex % Math.max(cloudAgents.length, 1);
-      window.networkGraph.edges.add({
-        from: edgeAgent.id,
-        to: agent.id,
-        color: {
-          color: isPrimary ? LINK_COLORS.primary : LINK_COLORS.secondary,
-          highlight: LINK_COLORS.highlight,
-        },
-        width: isPrimary ? 3.4 : 2.2,
-        dashes: isPrimary ? false : [6, 5],
-        arrows: { to: { enabled: true, scaleFactor: 0.7 } },
-        smooth: getSmoothStyle(edgeIndex + indexInLayer, isPrimary ? 0.18 : 0.28),
-      });
-    });
-  }
+  buildTopologyEdges(window.networkGraph.edges);
 
   syncTopologyLayout(container, window.networkInstance);
 

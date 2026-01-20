@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Topology Test (vis-network)</title>
+  <link rel="stylesheet" href="https://unpkg.com/vis-network/standalone/umd/vis-network.min.css">
+  <style>
+    :root {
+      --cloud-bg: #e7eefb;
+      --edge-bg: #fae7d6;
+      --terminal-bg: #e7f3db;
+      --cloud-grad: linear-gradient(120deg, #eef4ff 0%, #d7e4ff 100%);
+      --edge-grad: linear-gradient(120deg, #ffe9d8 0%, #f8d9be 100%);
+      --terminal-grad: linear-gradient(120deg, #eff8dd 0%, #d9ecc3 100%);
+      --cloud-stroke: rgba(56, 100, 186, 0.18);
+      --edge-stroke: rgba(200, 106, 34, 0.2);
+      --terminal-stroke: rgba(82, 140, 44, 0.2);
+      --panel-bg: #ffffff;
+      --line-blue: #2e4f93;
+      --line-orange: #ff6a1a;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #ffffff;
+      font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+      color: #1f2a44;
+    }
+
+    .page {
+      max-width: 1100px;
+      margin: 24px auto;
+      padding: 0 16px 40px;
+    }
+
+    .title {
+      font-size: 28px;
+      font-weight: 700;
+      color: #1a73e8;
+      margin: 6px 0 16px;
+    }
+
+    .topology-wrap {
+      position: relative;
+      height: 760px;
+      background:
+        radial-gradient(900px 240px at 60% -120px, rgba(26, 115, 232, 0.12), transparent 70%),
+        linear-gradient(180deg, #ffffff 0%, #f7f9ff 100%);
+      border: 1px solid #e2e6ef;
+      border-radius: 14px;
+      box-shadow: 0 10px 25px rgba(24, 32, 56, 0.08);
+      overflow: hidden;
+    }
+
+    .layer-band {
+      position: absolute;
+      left: 5%;
+      width: 90%;
+      border-radius: 26px;
+      border: 1px solid rgba(255, 255, 255, 0.7);
+      box-shadow: none;
+      overflow: hidden;
+      transform: skewY(-6deg);
+      transform-origin: left center;
+    }
+
+    .layer-band::before {
+      content: "";
+      position: absolute;
+      inset: -10% -6%;
+      background: radial-gradient(65% 80% at 15% 25%, rgba(255, 255, 255, 0.7), transparent 60%);
+      opacity: 0.9;
+    }
+
+    .layer-band::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(120deg, rgba(255, 255, 255, 0.4), transparent 60%),
+        repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.25) 0 1px, transparent 1px 28px);
+      opacity: 0.35;
+    }
+
+    .layer-band.cloud {
+      top: 55px;
+      height: 170px;
+      background: var(--cloud-grad);
+      border-color: var(--cloud-stroke);
+    }
+
+    .layer-band.edge {
+      top: 320px;
+      height: 150px;
+      background: var(--edge-grad);
+      border-color: var(--edge-stroke);
+    }
+
+    .layer-band.terminal {
+      top: 545px;
+      height: 140px;
+      background: var(--terminal-grad);
+      border-color: var(--terminal-stroke);
+    }
+
+    .layer-tag {
+      position: absolute;
+      right: 32px;
+      padding: 8px 14px;
+      border-radius: 10px;
+      color: #fff;
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 0.3px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 8px 14px rgba(0, 0, 0, 0.15);
+      z-index: 4;
+    }
+
+    .layer-tag small {
+      display: block;
+      font-weight: 600;
+      font-size: 11px;
+      opacity: 0.9;
+    }
+
+    .tag-cloud {
+      top: 60px;
+      background: linear-gradient(135deg, #2d7df0, #1a5ac7);
+    }
+
+    .tag-edge {
+      top: 320px;
+      background: linear-gradient(135deg, #ff8b2c, #e96a05);
+    }
+
+    .tag-terminal {
+      top: 550px;
+      background: linear-gradient(135deg, #8d3ad6, #6116a9);
+    }
+
+    #network {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+    }
+
+    .legend {
+      position: absolute;
+      bottom: 18px;
+      left: 18px;
+      background: rgba(255, 255, 255, 0.95);
+      border: 1px solid #e2e6ef;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 12px;
+      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12);
+      z-index: 5;
+    }
+
+    .legend .item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .legend .item:last-child {
+      margin-bottom: 0;
+    }
+
+    .legend .line {
+      width: 26px;
+      height: 0;
+      border-top: 3px dashed var(--line-blue);
+    }
+
+    .legend .line.orange {
+      border-top-color: var(--line-orange);
+    }
+
+    @media (max-width: 900px) {
+      .topology-wrap {
+        height: 640px;
+      }
+
+      .layer-band.cloud {
+        height: 150px;
+      }
+
+      .layer-band.edge {
+        top: 290px;
+        height: 130px;
+      }
+
+      .layer-band.terminal {
+        top: 500px;
+        height: 120px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="title">Network Topology (Test)</div>
+    <div class="topology-wrap">
+      <div class="layer-tag tag-cloud">CLOUD LAYER <small>High Compute</small></div>
+      <div class="layer-tag tag-edge">EDGE LAYER <small>Mid Compute</small></div>
+      <div class="layer-tag tag-terminal">TERMINAL LAYER <small>Local</small></div>
+
+      <div id="network"></div>
+
+      <div class="legend">
+        <div class="item"><span class="line"></span> In-layer links</div>
+        <div class="item"><span class="line orange"></span> Cross-layer links</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+  <script>
+    const svgToDataUri = (svg) => `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+
+    const icons = {
+      bot: svgToDataUri(`
+        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64">
+          <rect x="10" y="16" width="44" height="34" rx="6" fill="#ffffff" stroke="#1b1b1b" stroke-width="3"/>
+          <circle cx="26" cy="33" r="4" fill="#1b1b1b"/>
+          <circle cx="38" cy="33" r="4" fill="#1b1b1b"/>
+          <rect x="24" y="41" width="16" height="4" rx="2" fill="#1b1b1b"/>
+          <line x1="32" y1="8" x2="32" y2="16" stroke="#1b1b1b" stroke-width="3"/>
+          <circle cx="32" cy="6" r="4" fill="#ffffff" stroke="#1b1b1b" stroke-width="3"/>
+        </svg>
+      `),
+      server: svgToDataUri(`
+        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64">
+          <rect x="18" y="8" width="28" height="16" rx="4" fill="#f7f7f7" stroke="#1b1b1b" stroke-width="3"/>
+          <rect x="18" y="26" width="28" height="16" rx="4" fill="#f7f7f7" stroke="#1b1b1b" stroke-width="3"/>
+          <rect x="18" y="44" width="28" height="12" rx="4" fill="#f7f7f7" stroke="#1b1b1b" stroke-width="3"/>
+          <circle cx="26" cy="16" r="2" fill="#1b1b1b"/>
+          <circle cx="26" cy="34" r="2" fill="#1b1b1b"/>
+          <circle cx="26" cy="50" r="2" fill="#1b1b1b"/>
+        </svg>
+      `),
+      router: svgToDataUri(`
+        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64">
+          <ellipse cx="32" cy="22" rx="22" ry="10" fill="#dbe7ff" stroke="#1b1b1b" stroke-width="3"/>
+          <rect x="10" y="22" width="44" height="20" fill="#c5d8ff" stroke="#1b1b1b" stroke-width="3"/>
+          <ellipse cx="32" cy="42" rx="22" ry="10" fill="#b4c9ff" stroke="#1b1b1b" stroke-width="3"/>
+          <path d="M22 26 L42 38" stroke="#1b1b1b" stroke-width="3"/>
+          <path d="M42 26 L22 38" stroke="#1b1b1b" stroke-width="3"/>
+        </svg>
+      `),
+      user: svgToDataUri(`
+        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64">
+          <circle cx="32" cy="22" r="12" fill="#ffffff" stroke="#1b1b1b" stroke-width="3"/>
+          <rect x="14" y="36" width="36" height="18" rx="9" fill="#ffffff" stroke="#1b1b1b" stroke-width="3"/>
+        </svg>
+      `),
+      phone: svgToDataUri(`
+        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64">
+          <rect x="20" y="6" width="24" height="52" rx="6" fill="#ffffff" stroke="#1b1b1b" stroke-width="3"/>
+          <rect x="24" y="14" width="16" height="30" rx="2" fill="#f2f2f2" stroke="#1b1b1b" stroke-width="2"/>
+          <circle cx="32" cy="50" r="2.5" fill="#1b1b1b"/>
+        </svg>
+      `),
+      desktop: svgToDataUri(`
+        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64">
+          <rect x="10" y="12" width="44" height="28" rx="4" fill="#ffffff" stroke="#1b1b1b" stroke-width="3"/>
+          <rect x="26" y="40" width="12" height="8" fill="#ffffff" stroke="#1b1b1b" stroke-width="3"/>
+          <rect x="18" y="48" width="28" height="6" rx="3" fill="#ffffff" stroke="#1b1b1b" stroke-width="3"/>
+        </svg>
+      `),
+      agent: svgToDataUri(`
+        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64">
+          <polygon points="32,8 52,20 52,44 32,56 12,44 12,20"
+            fill="#eef3ff" stroke="#1b2f6b" stroke-width="3" stroke-linejoin="round"/>
+          <circle cx="24" cy="26" r="4" fill="#1a73e8"/>
+          <circle cx="40" cy="26" r="4" fill="#1a73e8"/>
+          <circle cx="32" cy="40" r="4" fill="#1a73e8"/>
+          <path d="M24 26 L32 40 L40 26" fill="none" stroke="#1a73e8" stroke-width="3"/>
+        </svg>
+      `)
+    };
+
+    const nodes = new vis.DataSet([
+      { id: 1, label: "VideoAgent", shape: "image", image: icons.agent, size: 36, x: -180, y: -260, fixed: true, font: { size: 16, color: "#1b2f6b" } },
+      { id: 19, label: "RegistryAgent", shape: "image", image: icons.agent, size: 36, x: 40, y: -260, fixed: true, font: { size: 16, color: "#1b2f6b" } },
+      { id: 20, label: "DiscoveryAgent", shape: "image", image: icons.agent, size: 36, x: 260, y: -250, fixed: true, font: { size: 16, color: "#1b2f6b" } },
+      { id: 3, label: "", shape: "image", image: icons.bot, size: 26, x: -320, y: -260, fixed: true, font: { size: 0 } },
+      { id: 4, label: "", shape: "image", image: icons.bot, size: 26, x: -60, y: -230, fixed: true, font: { size: 0 } },
+      { id: 5, label: "Server", shape: "image", image: icons.server, size: 26, x: 360, y: -240, fixed: true },
+
+      { id: 2, label: "MeteorologyAgent", shape: "image", image: icons.agent, size: 36, x: -220, y: -40, fixed: true, font: { size: 16, color: "#1b2f6b" } },
+      { id: 6, label: "KeyframeAgent", shape: "image", image: icons.agent, size: 36, x: -80, y: 60, fixed: true, font: { size: 16, color: "#1b2f6b" } },
+      { id: 7, label: "MapAgent", shape: "image", image: icons.agent, size: 36, x: 140, y: -40, fixed: true, font: { size: 16, color: "#1b2f6b" } },
+      { id: 12, label: "ReportAgent", shape: "image", image: icons.agent, size: 36, x: 280, y: 60, fixed: true, font: { size: 16, color: "#1b2f6b" } },
+      { id: 8, label: "Gateway", shape: "image", image: icons.router, size: 30, x: -340, y: 110, fixed: true },
+      { id: 9, label: "Gateway", shape: "image", image: icons.router, size: 30, x: 360, y: 110, fixed: true },
+      { id: 10, label: "Server", shape: "image", image: icons.server, size: 26, x: -340, y: 20, fixed: true },
+      { id: 11, label: "Server", shape: "image", image: icons.server, size: 26, x: 360, y: 20, fixed: true },
+
+      { id: 13, label: "User", shape: "image", image: icons.user, size: 28, x: -240, y: 220, fixed: true },
+      { id: 18, label: "Phone", shape: "image", image: icons.phone, size: 28, x: -150, y: 220, fixed: true },
+      { id: 14, label: "User", shape: "image", image: icons.user, size: 28, x: -60, y: 220, fixed: true },
+      { id: 17, label: "Desktop", shape: "image", image: icons.desktop, size: 28, x: 30, y: 220, fixed: true },
+      { id: 15, label: "Desktop", shape: "image", image: icons.desktop, size: 28, x: 120, y: 220, fixed: true },
+      { id: 16, label: "Phone", shape: "image", image: icons.phone, size: 28, x: 210, y: 220, fixed: true }
+    ]);
+
+    const edges = new vis.DataSet([
+      { from: 3, to: 1, dashes: true, color: { color: "#2e4f93" }, width: 3 },
+      { from: 4, to: 19, dashes: true, color: { color: "#2e4f93" }, width: 3 },
+      { from: 5, to: 20, dashes: true, color: { color: "#2e4f93" }, width: 3 },
+
+      { from: 2, to: 6, dashes: true, color: { color: "#2e4f93" }, width: 3 },
+      { from: 6, to: 7, dashes: true, color: { color: "#2e4f93" }, width: 3 },
+      { from: 7, to: 12, dashes: true, color: { color: "#2e4f93" }, width: 3 },
+      { from: 2, to: 7, dashes: true, color: { color: "#2e4f93" }, width: 3 },
+      { from: 6, to: 12, dashes: true, color: { color: "#2e4f93" }, width: 3 },
+      { from: 10, to: 2, dashes: true, color: { color: "#2e4f93" }, width: 3 },
+      { from: 8, to: 6, dashes: true, color: { color: "#2e4f93" }, width: 3 },
+      { from: 11, to: 7, dashes: true, color: { color: "#2e4f93" }, width: 3 },
+      { from: 9, to: 12, dashes: true, color: { color: "#2e4f93" }, width: 3 },
+
+      { from: 12, to: 13, color: { color: "#ff6a1a" }, width: 2, dashes: [6, 8] },
+      { from: 12, to: 18, color: { color: "#ff6a1a" }, width: 2, dashes: [6, 8] },
+      { from: 12, to: 14, color: { color: "#ff6a1a" }, width: 2, dashes: [6, 8] },
+      { from: 12, to: 17, color: { color: "#ff6a1a" }, width: 2, dashes: [6, 8] },
+      { from: 12, to: 15, color: { color: "#ff6a1a" }, width: 2, dashes: [6, 8] },
+      { from: 12, to: 16, color: { color: "#ff6a1a" }, width: 2, dashes: [6, 8] },
+
+      { from: 1, to: 6, color: { color: "#ff6a1a" }, width: 4, smooth: { type: "curvedCW", roundness: 0.25 } },
+      { from: 19, to: 7, color: { color: "#ff6a1a" }, width: 4, smooth: { type: "curvedCCW", roundness: 0.22 } },
+      { from: 20, to: 12, color: { color: "#ff6a1a" }, width: 4, smooth: { type: "curvedCW", roundness: 0.2 } }
+    ]);
+
+    const container = document.getElementById("network");
+    const data = { nodes, edges };
+    const options = {
+      physics: false,
+      interaction: { hover: true },
+      nodes: {
+        borderWidth: 0,
+        font: {
+          color: "#1b2f6b",
+          face: "Segoe UI",
+          strokeWidth: 3,
+          strokeColor: "#ffffff"
+        }
+      },
+      edges: {
+        smooth: true
+      }
+    };
+
+    new vis.Network(container, data, options);
+  </script>
+</body>
+</html>
