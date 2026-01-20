@@ -435,7 +435,7 @@ function getLayerPosition(layer, indexInLayer, totalAgents, metrics) {
   const bandWidth = metrics.width - metrics.paddingX * 2;
 
   if (layer === "edge" && totalAgents === 4) {
-    const span = Math.min(bandWidth * 0.76, bandWidth - 40);
+    const span = Math.min(bandWidth * 0.68, bandWidth - 80);
     const rowGap = Math.max(
       64,
       Math.min(110, getLayerRowMetrics(metrics).rowHeight * 0.45)
@@ -524,6 +524,16 @@ function getInfraNodesLayout(metrics) {
     edgeOffsetLimit
   );
   const edgeOffsetY = Math.max(26, rowHeight * 0.24);
+  const gatewayMargin = Math.max(6, metrics.width * 0.008);
+  const gatewayOffsetX = Math.max(
+    0,
+    Math.min(
+      edgeOffsetX * 1.05,
+      edgePositions[1].x - bandMinX - gatewayMargin,
+      bandMaxX - edgePositions[3].x - gatewayMargin
+    )
+  );
+  const gatewayOffsetY = edgeOffsetY * 1.35;
   const terminalCount = 6;
   const terminalSpacing = Math.min(
     Math.max(82, metrics.width * 0.13),
@@ -587,8 +597,8 @@ function getInfraNodesLayout(metrics) {
     },
     {
       id: "infra-edge-gateway-left",
-      x: edgePositions[1].x - edgeOffsetX * 1.15,
-      y: edgePositions[1].y + edgeOffsetY * 1.3,
+      x: edgePositions[1].x - gatewayOffsetX,
+      y: edgePositions[1].y + gatewayOffsetY,
     },
     {
       id: "infra-edge-server-right",
@@ -597,8 +607,8 @@ function getInfraNodesLayout(metrics) {
     },
     {
       id: "infra-edge-gateway-right",
-      x: edgePositions[3].x + edgeOffsetX * 1.25,
-      y: edgePositions[3].y + edgeOffsetY * 1.4,
+      x: edgePositions[3].x + gatewayOffsetX,
+      y: edgePositions[3].y + gatewayOffsetY,
     },
     {
       id: "infra-terminal-user-left",
